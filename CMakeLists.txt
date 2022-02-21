@@ -19,6 +19,8 @@ project(spirv2clc)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(GenerateExportHeader)
+
 set(SPIRV-Headers_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Headers)
 set(SPIRV_TOOLS_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools)
 set(SPIRV_TOOLS_BINARY_DIR ${CMAKE_BINARY_DIR}/external/SPIRV-Tools)

@@ -16,9 +16,17 @@ add_library(libspirv2clc translator.cpp)
 
 target_include_directories(libspirv2clc PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR} # For the export header
     ${OPENCL_HEADERS_DIR}
     ${SPIRV_TOOLS_DIR}
     ${SPIRV_TOOLS_DIR}/source
     ${SPIRV_TOOLS_BINARY_DIR})
 
+set_target_properties(libspirv2clc PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+)
+
 target_link_libraries(libspirv2clc SPIRV-Tools-opt)
+
+generate_export_header(libspirv2clc)
