@@ -21,15 +21,19 @@
 #include <vector>
 
 #include "opt/ir_context.h"
+#include <libspirv2clc_export.h>
 
 namespace spirv2clc {
 
 struct translator {
 
-  translator(spv_target_env env = SPV_ENV_OPENCL_1_2) : m_target_env(env) {}
+  LIBSPIRV2CLC_EXPORT translator(spv_target_env env = SPV_ENV_OPENCL_1_2)
+      : m_target_env(env) {}
 
-  int translate(const std::string &assembly, std::string *srcout);
-  int translate(const std::vector<uint32_t> &binary, std::string *srcout);
+  LIBSPIRV2CLC_EXPORT int translate(const std::string &assembly,
+                                    std::string *srcout);
+  LIBSPIRV2CLC_EXPORT int translate(const std::vector<uint32_t> &binary,
+                                    std::string *srcout);
 
 private:
   uint32_t type_id_for(uint32_t val) const {
