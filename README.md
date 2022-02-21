@@ -1,4 +1,4 @@
-# spirv2clc
+# spirv2clc [![CI badge](https://github.com/kpet/spirv2clc/actions/workflows/presubmit.yml/badge.svg?branch=main)](https://github.com/kpet/spirv2clc/actions/workflows/presubmit.yml?query=branch%3Amain++)
 
 spirv2clc is an experimental OpenCL SPIR-V to OpenCL C translator currently
 targeting OpenCL 1.2 support. It can generate OpenCL C code equivalent to an
