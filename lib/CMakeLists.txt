@@ -32,3 +32,9 @@ set_target_properties(libspirv2clc PROPERTIES
 target_link_libraries(libspirv2clc SPIRV-Tools-opt)
 
 generate_export_header(libspirv2clc)
+
+add_library(SPIRV2CLC-Layer SHARED layer.cpp)
+
+target_link_libraries(SPIRV2CLC-Layer PUBLIC libspirv2clc)
+
+target_compile_features(SPIRV2CLC-Layer PUBLIC cxx_std_17)
