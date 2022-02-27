@@ -18,13 +18,125 @@
 #include "CL/cl_half.h"
 
 #include "opt/build_module.h"
+#include "opt/ir_context.h"
 #include "spirv/unified1/OpenCL.std.h"
 
 using namespace spvtools;
 using namespace spvtools::opt;
 using spvtools::opt::analysis::Type;
 
+namespace {
+
+std::string rounding_mode(SpvFPRoundingMode mode) {
+  switch (mode) {
+  case SpvFPRoundingModeRTE:
+    return "rte";
+  case SpvFPRoundingModeRTZ:
+    return "rtz";
+  case SpvFPRoundingModeRTP:
+    return "rtp";
+  case SpvFPRoundingModeRTN:
+    return "rtn";
+  }
+  return "UNKNOWN ROUNDING MODE";
+}
+
+const spvtools::MessageConsumer m_spvtools_message_consumer =
+    [](spv_message_level_t level, const char *, const spv_position_t &position,
+       const char *message) {
+      printf("spvtools says '%s' at position %zu", message, position.index);
+    };
+
+} // namespace
+
 namespace spirv2clc {
+
+translator::translator(spv_target_env env) : m_target_env(env) {}
+
+translator::~translator() = default;
+translator::translator(translator &&) = default;
+translator &translator::operator=(translator &&) = default;
+
+uint32_t translator::type_id_for(uint32_t val) const {
+  auto defuse = m_ir->get_def_use_mgr();
+  return defuse->GetDef(val)->type_id();
+}
+
+uint32_t
+translator::type_id_for(const spvtools::opt::analysis::Type *type) const {
+  return m_ir->get_type_mgr()->GetId(type);
+}
+
+spvtools::opt::analysis::Type *translator::type_for(uint32_t tyid) const {
+  return m_ir->get_type_mgr()->GetType(tyid);
+}
+
+spvtools::opt::analysis::Type *translator::type_for_val(uint32_t val) const {
+  return type_for(type_id_for(val));
+}
+
+uint32_t translator::array_type_get_length(uint32_t tyid) const {
+  auto type = type_for(tyid);
+  auto tarray = type->AsArray();
+  auto const &length_info = tarray->length_info();
+  uint64_t num_elems;
+  if (length_info.words[0] !=
+      spvtools::opt::analysis::Array::LengthInfo::kConstant) {
+    std::cerr << "UNIMPLEMENTED array type with non-constant length"
+              << std::endl;
+    return 0;
+  }
+
+  if (length_info.words.size() > 2) {
+    for (unsigned i = 2; i < length_info.words.size(); i++) {
+      if (length_info.words[i] != 0) {
+        std::cerr << "UNIMPLEMENTED array type with huge size" << std::endl;
+        return 0;
+      }
+    }
+  }
+
+  return length_info.words[1];
+}
+
+std::string translator::src_var_decl(uint32_t tyid, const std::string &name,
+                                     uint32_t val) const {
+  auto ty = type_for(tyid);
+  if (ty->kind() == spvtools::opt::analysis::Type::Kind::kArray) {
+    auto aty = ty->AsArray();
+    auto eid = type_id_for(aty->element_type());
+    auto cstmgr = m_ir->get_constant_mgr();
+    auto ecnt =
+        cstmgr->FindDeclaredConstant(aty->LengthId())->GetSignExtendedValue();
+    return src_type(eid) + " " + name + "[" + std::to_string(ecnt) + "]";
+  } else {
+    if (val != 0) {
+      return src_type_for_value(val) + " " + name;
+    } else {
+      return src_type(tyid) + " " + name;
+    }
+  }
+}
+
+std::string
+translator::src_access_chain(const std::string &src_base,
+                             const spvtools::opt::analysis::Type *ty,
+                             uint32_t index) const {
+  std::string ret = "(" + src_base + ")";
+  if (ty->kind() == spvtools::opt::analysis::Type::kStruct) {
+    auto cstmgr = m_ir->get_constant_mgr();
+    auto idxcst = cstmgr->FindDeclaredConstant(index);
+    if (idxcst == nullptr) {
+      return "UNIMPLEMENTED";
+    }
+    return "&(" + ret + "->m" + std::to_string(idxcst->GetZeroExtendedValue()) +
+           ")";
+  } else if (ty->kind() == spvtools::opt::analysis::Type::kArray) {
+    return "&(" + ret + "[" + var_for(index) + "])";
+  } else {
+    return "UNIMPLEMENTED";
+  }
+}
 
 std::string
 translator::src_type_memory_object_declaration(uint32_t tid, uint32_t val,
