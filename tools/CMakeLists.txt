@@ -14,6 +14,4 @@
 
 add_executable(spirv2clc spirv2clc.cpp)
 
-target_include_directories(spirv2clc PRIVATE
-    ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(spirv2clc libspirv2clc)

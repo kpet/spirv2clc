@@ -18,17 +18,37 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include "opt/ir_context.h"
 #include <libspirv2clc_export.h>
+#include <spirv-tools/libspirv.h>
+#include <spirv/unified1/spirv.h>
+
+namespace spvtools {
+namespace opt {
+
+class BasicBlock;
+class Instruction;
+class IRContext;
+class Function;
+
+namespace analysis {
+class Type;
+}
+
+} // namespace opt
+} // namespace spvtools
 
 namespace spirv2clc {
 
 struct translator {
 
-  LIBSPIRV2CLC_EXPORT translator(spv_target_env env = SPV_ENV_OPENCL_1_2)
-      : m_target_env(env) {}
+  LIBSPIRV2CLC_EXPORT translator(spv_target_env env = SPV_ENV_OPENCL_1_2);
+
+  LIBSPIRV2CLC_EXPORT translator(translator &&);
+  LIBSPIRV2CLC_EXPORT translator &operator=(translator &&);
+  LIBSPIRV2CLC_EXPORT ~translator();
 
   LIBSPIRV2CLC_EXPORT int translate(const std::string &assembly,
                                     std::string *srcout);
@@ -36,47 +56,15 @@ struct translator {
                                     std::string *srcout);
 
 private:
-  uint32_t type_id_for(uint32_t val) const {
-    auto defuse = m_ir->get_def_use_mgr();
-    return defuse->GetDef(val)->type_id();
-  }
+  uint32_t type_id_for(uint32_t val) const;
 
-  uint32_t type_id_for(const spvtools::opt::analysis::Type *type) const {
-    return m_ir->get_type_mgr()->GetId(type);
-  }
+  uint32_t type_id_for(const spvtools::opt::analysis::Type *type) const;
 
-  spvtools::opt::analysis::Type *type_for(uint32_t tyid) const {
-    return m_ir->get_type_mgr()->GetType(tyid);
-  }
+  spvtools::opt::analysis::Type *type_for(uint32_t tyid) const;
 
-  spvtools::opt::analysis::Type *type_for_val(uint32_t val) const {
-    return type_for(type_id_for(val));
-  }
+  spvtools::opt::analysis::Type *type_for_val(uint32_t val) const;
 
-  uint32_t array_type_get_length(uint32_t tyid) const {
-    auto type = type_for(tyid);
-    auto tarray = type->AsArray();
-    auto const &length_info = tarray->length_info();
-    uint64_t num_elems;
-    if (length_info.words[0] != spvtools::opt::analysis::Array::LengthInfo::kConstant) {
-      std::cerr << "UNIMPLEMENTED array type with non-constant length"
-                << std::endl;
-      return 0;
-    }
-
-    if (length_info.words.size() > 2) {
-      for (unsigned i = 2; i < length_info.words.size(); i++) {
-        if (length_info.words[i] != 0) {
-          std::cerr
-              << "UNIMPLEMENTED array type with huge size"
-              << std::endl;
-          return 0;
-        }
-      }
-    }
-
-    return length_info.words[1];
-  }
+  uint32_t array_type_get_length(uint32_t tyid) const;
 
   std::string var_for(uint32_t id) const {
     if (m_literals.count(id)) {
@@ -100,23 +88,7 @@ private:
   }
 
   std::string src_var_decl(uint32_t tyid, const std::string &name,
-                           uint32_t val = 0) const {
-    auto ty = type_for(tyid);
-    if (ty->kind() == spvtools::opt::analysis::Type::Kind::kArray) {
-      auto aty = ty->AsArray();
-      auto eid = type_id_for(aty->element_type());
-      auto cstmgr = m_ir->get_constant_mgr();
-      auto ecnt =
-          cstmgr->FindDeclaredConstant(aty->LengthId())->GetSignExtendedValue();
-      return src_type(eid) + " " + name + "[" + std::to_string(ecnt) + "]";
-    } else {
-      if (val != 0) {
-        return src_type_for_value(val) + " " + name;
-      } else {
-        return src_type(tyid) + " " + name;
-      }
-    }
-  }
+                           uint32_t val = 0) const;
 
   std::string src_var_decl(uint32_t val) const {
     auto tyid = type_id_for(val);
@@ -125,22 +97,7 @@ private:
 
   std::string src_access_chain(const std::string &src_base,
                                const spvtools::opt::analysis::Type *ty,
-                               uint32_t index) const {
-    std::string ret = "(" + src_base + ")";
-    if (ty->kind() == spvtools::opt::analysis::Type::kStruct) {
-      auto cstmgr = m_ir->get_constant_mgr();
-      auto idxcst = cstmgr->FindDeclaredConstant(index);
-      if (idxcst == nullptr) {
-        return "UNIMPLEMENTED";
-      }
-      return "&(" + ret + "->m" +
-             std::to_string(idxcst->GetZeroExtendedValue()) + ")";
-    } else if (ty->kind() == spvtools::opt::analysis::Type::kArray) {
-      return "&(" + ret + "[" + var_for(index) + "])";
-    } else {
-      return "UNIMPLEMENTED";
-    }
-  }
+                               uint32_t index) const;
 
   std::string src_vec_comp(uint32_t val, uint32_t comp) const {
     std::stringstream scomp;
@@ -274,19 +231,6 @@ private:
   }
 
   std::string src_pointer_type(uint32_t storage, uint32_t tyid, bool signedty) const;
-  std::string rounding_mode(SpvFPRoundingMode mode) const {
-    switch (mode) {
-    case SpvFPRoundingModeRTE:
-      return "rte";
-    case SpvFPRoundingModeRTZ:
-      return "rtz";
-    case SpvFPRoundingModeRTP:
-      return "rtp";
-    case SpvFPRoundingModeRTN:
-      return "rtn";
-    }
-    return "UNKNOWN ROUNDING MODE";
-  }
 
   std::string builtin_vector_extract(uint32_t id, uint32_t idx, bool constant) const;
 
@@ -322,12 +266,6 @@ private:
 
   bool validate_module(const std::vector<uint32_t> &binary) const;
   int translate();
-
-  const spvtools::MessageConsumer m_spvtools_message_consumer =
-      [](spv_message_level_t level, const char *,
-         const spv_position_t &position, const char *message) {
-        printf("spvtools says '%s' at position %zu", message, position.index);
-      };
 
   void reset() {
     m_src.str("");
