@@ -21,7 +21,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include <libspirv2clc_export.h>
+#include "libspirv2clc_export.h"
 #include <spirv-tools/libspirv.h>
 #include <spirv/unified1/spirv.h>
 

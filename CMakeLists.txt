@@ -16,6 +16,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project(spirv2clc)
 
+cmake_policy(SET CMP0063 NEW)
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

@@ -41,7 +41,7 @@ std::string rounding_mode(SpvFPRoundingMode mode) {
   return "UNKNOWN ROUNDING MODE";
 }
 
-const spvtools::MessageConsumer m_spvtools_message_consumer =
+const spvtools::MessageConsumer spvtools_message_consumer =
     [](spv_message_level_t level, const char *, const spv_position_t &position,
        const char *message) {
       printf("spvtools says '%s' at position %zu", message, position.index);
@@ -2690,7 +2690,7 @@ bool translator::validate_module(const std::vector<uint32_t> &binary) const {
 
 int translator::translate(const std::string &assembly, std::string *srcout) {
 
-  m_ir = BuildModule(m_target_env, m_spvtools_message_consumer, assembly);
+  m_ir = BuildModule(m_target_env, spvtools_message_consumer, assembly);
 
   std::vector<uint32_t> module_bin;
   m_ir->module()->ToBinary(&module_bin, false);
@@ -2710,7 +2710,7 @@ int translator::translate(const std::string &assembly, std::string *srcout) {
 int translator::translate(const std::vector<uint32_t> &binary,
                           std::string *srcout) {
 
-  m_ir = BuildModule(m_target_env, m_spvtools_message_consumer,
+  m_ir = BuildModule(m_target_env, spvtools_message_consumer,
                      binary.data(), binary.size());
 
   if (!validate_module(binary)) {
