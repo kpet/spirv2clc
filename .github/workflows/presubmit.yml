@@ -20,16 +20,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
+        os: [ubuntu-20.04, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
           submodules: recursive
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
       - name: Build
         run: |
             set +x
             mkdir build
             cd build
-            cmake ..
-            make -j2 VERBOSE=1
+            cmake -G Ninja ..
+            cmake --build . -j3
