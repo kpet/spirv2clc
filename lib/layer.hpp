@@ -41,6 +41,13 @@ CL_API_ENTRY cl_int CL_API_CALL clBuildProgram_wrap(
   void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
   void* user_data);
 
+CL_API_ENTRY cl_int CL_API_CALL clGetProgramInfo_wrap(
+  cl_program program,
+  cl_program_info param_name,
+  size_t param_value_size,
+  void* param_value,
+  size_t* param_value_size_ret);
+
 #include <map>
 #include <memory>
 #include <string>
@@ -83,7 +90,14 @@ namespace spirv2clc
       void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
       void* user_data);
 
-    std::map<cl_program, std::string> program_ils;
+    cl_int clGetProgramInfo(
+      cl_program program,
+      cl_program_info param_name,
+      size_t param_value_size,
+      void* param_value,
+      size_t* param_value_size_ret);
+
+    std::map<cl_program, std::pair<std::string, std::string>> program_ils;
 
   private:
     void init_dispatch(void);
@@ -121,6 +135,13 @@ namespace spirv2clc
     cl_int clGetDeviceInfo_CL_DEVICE_ILS_WITH_VERSION(
       cl_device_id device,
       cl_device_info param_name,
+      size_t param_value_size,
+      void* param_value,
+      size_t* param_value_size_ret);
+
+    cl_int clGetProgramInfo_CL_PROGRAM_IL(
+      cl_program program,
+      cl_program_info param_name,
       size_t param_value_size,
       void* param_value,
       size_t* param_value_size_ret);

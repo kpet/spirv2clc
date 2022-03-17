@@ -92,6 +92,22 @@ CL_API_ENTRY cl_int CL_API_CALL clBuildProgram_wrap(
     user_data);
 }
 
+CL_API_ENTRY cl_int CL_API_CALL clGetProgramInfo_wrap(
+  cl_program program,
+  cl_program_info param_name,
+  size_t param_value_size,
+  void* param_value,
+  size_t* param_value_size_ret)
+{
+  return spirv2clc::instance->clGetProgramInfo(
+    program,
+    param_name,
+    param_value_size,
+    param_value,
+    param_value_size_ret
+  );
+}
+
 #include "spirv2clc.h"
 
 #include <vector>
@@ -364,7 +380,11 @@ cl_program layer::clCreateProgramWithIL(
       errcode_ret);
     if (*errcode_ret == CL_SUCCESS)
     {
-      program_ils[prog] = std::string(str, len);
+      program_ils[prog] =
+        std::make_pair(
+          std::string(static_cast<const char*>(il), length),
+          std::string(str, len)
+        );
     }
     return prog;
   }
@@ -393,6 +413,34 @@ cl_int layer::clBuildProgram(
     options,
     pfn_notify,
     user_data);
+}
+
+cl_int layer::clGetProgramInfo(
+  cl_program program,
+  cl_device_info param_name,
+  size_t param_value_size,
+  void* param_value,
+  size_t* param_value_size_ret)
+{
+  switch (param_name)
+  {
+    case CL_PROGRAM_IL:
+      return clGetProgramInfo_CL_PROGRAM_IL(
+        program,
+        param_name,
+        param_value_size,
+        param_value,
+        param_value_size_ret);
+      break;
+    default:
+      return tdispatch->clGetProgramInfo(
+        program,
+        param_name,
+        param_value_size,
+        param_value,
+        param_value_size_ret);
+      break;
+  }
 }
 
 cl_int layer::clGetDeviceInfo_CL_DEVICE_EXTENSIONS(
@@ -616,6 +664,34 @@ cl_int layer::clGetDeviceInfo_CL_DEVICE_ILS_WITH_VERSION(
       return err_;
     }
   }
+}
+
+cl_int layer::clGetProgramInfo_CL_PROGRAM_IL(
+      cl_program program,
+      cl_program_info param_name,
+      size_t param_value_size,
+      void* param_value,
+      size_t* param_value_size_ret)
+{
+  if (param_value_size_ret != nullptr)
+    *param_value_size_ret = program_ils[program].first.length() * sizeof(char);
+
+  if (param_value_size >= program_ils[program].first.length() * sizeof(char))
+  {
+    if (param_value != nullptr)
+    {
+      std::copy(
+        program_ils[program].first.begin(),
+        program_ils[program].first.end(),
+        static_cast<char*>(param_value)
+      );
+      return CL_SUCCESS;
+    }
+    else
+      return CL_INVALID_VALUE;
+  }
+  else
+    return CL_INVALID_VALUE;
 }
 
 } // namespace spirv2clc
