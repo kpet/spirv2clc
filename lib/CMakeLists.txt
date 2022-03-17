@@ -38,3 +38,7 @@ add_library(SPIRV2CLC-Layer SHARED layer.cpp)
 target_link_libraries(SPIRV2CLC-Layer PUBLIC libspirv2clc)
 
 target_compile_features(SPIRV2CLC-Layer PUBLIC cxx_std_17)
+
+target_compile_definitions(SPIRV2CLC-Layer
+  PUBLIC
+    CL_TARGET_OPENCL_VERSION=300)
