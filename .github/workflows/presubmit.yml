@@ -28,10 +28,16 @@ jobs:
           submodules: recursive
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
-      - name: Build
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: ${{ matrix.os }}
+      - name: Configure
         run: |
             set +x
             mkdir build
             cd build
-            cmake -G Ninja ..
-            cmake --build . -j3
+            cmake -G Ninja -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ..
+      - name: Build
+        run: cmake --build ./build -j3
