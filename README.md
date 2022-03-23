@@ -54,6 +54,25 @@ std::vector<uint32_t> binary;
 int err = translator.translate(binary, &srcgen);
 ```
 
+## Installation
+
+To install the library, first check you're building with the right CMake variables set:
+* `CMAKE_INSTALL_PREFIX` - Location of the final package.
+* `BUILD_SHARED_LIBS` - Whether to build spirv2clc as a shared library or a static library.
+  Note that a static library build at the moment requires the user
+  to manually provide the SPIR-V dependencies as static libraries
+  in the target project (where you want to embed spirv2clc).
+* `CMAKE_POSITION_INDEPENDENT_CODE` - Whether to enable `fPIC` or similar flags
+  when building the library. Ensure this matches the target project.
+
+To install the library after a successful build, run the following command:
+```sh
+cmake --install .
+```
+
+After the installation step you can use spirv2clc as an `IMPORTED` library
+in your target project.
+
 # Running with test layer
 
 A layer that enables a round-trip translation of OpenCL C programs to SPIR-V and

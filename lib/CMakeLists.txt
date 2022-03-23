@@ -32,3 +32,27 @@ set_target_properties(libspirv2clc PROPERTIES
 target_link_libraries(libspirv2clc SPIRV-Tools-opt)
 
 generate_export_header(libspirv2clc)
+
+install(TARGETS libspirv2clc
+    RUNTIME DESTINATION lib COMPONENT libraries
+    LIBRARY DESTINATION lib COMPONENT libraries
+    ARCHIVE DESTINATION lib COMPONENT libraries
+)
+install(FILES
+        "${PROJECT_SOURCE_DIR}/include/spirv2clc.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/libspirv2clc_export.h"
+    DESTINATION include
+    COMPONENT headers
+)
+install(DIRECTORY "${SPIRV_TOOLS_DIR}/include"
+    DESTINATION .
+    COMPONENT headers
+    FILES_MATCHING
+        PATTERN "spirv-tools/libspirv.h"
+)
+install(DIRECTORY "${SPIRV-Headers_SOURCE_DIR}/include"
+    DESTINATION .
+    COMPONENT headers
+    FILES_MATCHING
+        PATTERN "spirv/unified1/spirv.h"
+)
