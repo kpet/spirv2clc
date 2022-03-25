@@ -35,6 +35,10 @@ generate_export_header(libspirv2clc)
 
 add_library(SPIRV2CLC-Layer SHARED layer.cpp)
 
+target_include_directories(SPIRV2CLC-Layer
+  PRIVATE
+    ${OPENCL_HEADERS_DIR})
+
 target_compile_features(SPIRV2CLC-Layer PUBLIC cxx_std_17)
 
 target_compile_definitions(SPIRV2CLC-Layer
