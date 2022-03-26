@@ -14,6 +14,8 @@
 
 add_library(libspirv2clc translator.cpp)
 
+set_property(TARGET libspirv2clc PROPERTY POSITION_INDEPENDENT_CODE 1)
+
 target_include_directories(libspirv2clc
   PUBLIC
     ${PROJECT_SOURCE_DIR}/include

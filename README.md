@@ -62,8 +62,6 @@ To install the library, first check you're building with the right CMake variabl
   Note that a static library build at the moment requires the user
   to manually provide the SPIR-V dependencies as static libraries
   in the target project (where you want to embed spirv2clc).
-* `CMAKE_POSITION_INDEPENDENT_CODE` - Whether to enable `fPIC` or similar flags
-  when building the library. Ensure this matches the target project.
 
 To install the library after a successful build, run the following command:
 ```sh
