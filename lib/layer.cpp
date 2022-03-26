@@ -486,20 +486,20 @@ cl_int layer::clGetDeviceInfo_CL_DEVICE_EXTENSIONS(
       if (err_ == CL_SUCCESS)
       {
         std::string dispatch_extensions(
-          dispatch_param_value_size_ret,
+          dispatch_param_value_size_ret - 1,
           '\0'
         );
         err_ = tdispatch->clGetDeviceInfo(
           device,
           CL_DEVICE_EXTENSIONS,
-          dispatch_extensions.size(),
+          dispatch_extensions.size() + 1,
           dispatch_extensions.data(),
           nullptr
         );
         dispatch_extensions.append(" cl_khr_il_program");
 
         if (param_value_size_ret != nullptr)
-          *param_value_size_ret = dispatch_extensions.length() * sizeof(char);
+          *param_value_size_ret = dispatch_extensions.length() * sizeof(char) + 1;
 
         if (param_value_size >= dispatch_extensions.length() * sizeof(char))
         {
@@ -515,7 +515,7 @@ cl_int layer::clGetDeviceInfo_CL_DEVICE_EXTENSIONS(
           else
             return CL_INVALID_VALUE;
         }
-        else
+        else if (param_value != nullptr)
           return CL_INVALID_VALUE;
       }
       else

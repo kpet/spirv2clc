@@ -14,6 +14,7 @@
 
 add_library(libspirv2clc translator.cpp)
 
+set_property(TARGET libspirv2clc PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(libspirv2clc
   PUBLIC
     ${PROJECT_SOURCE_DIR}/include
@@ -34,7 +35,7 @@ target_link_libraries(libspirv2clc SPIRV-Tools-opt)
 generate_export_header(libspirv2clc)
 
 add_library(SPIRV2CLC-Layer SHARED layer.cpp)
-
+set_property(TARGET SPIRV2CLC-Layer PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(SPIRV2CLC-Layer
   PRIVATE
     ${OPENCL_HEADERS_DIR})
