@@ -15,12 +15,13 @@ jobs:
         run: |
           ./tests/check-format.sh
   build:
-    name: Build ${{ matrix.os }}
+    name: Build ${{ matrix.os }} ${{ matrix.config }}
     needs: format
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-20.04, macos-latest, windows-latest]
+        config: [Debug,Release]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -32,7 +33,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
-          key: ${{ matrix.os }}
+          key: ${{ matrix.os }}-${{ matrix.config }}
       - name: Configure
         shell: bash
         run: |
@@ -41,9 +42,14 @@ jobs:
             cd build
             mkdir install
             cmake .. -G Ninja \
+              -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
               -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install'
       - name: Build
-        run: cmake --build ./build -j3
+        run: cmake --build ./build --config ${{ matrix.config }} -j3
       - name: Install
         run: cmake --install ./build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: spirv2clc-${{ matrix.os }}-${{ matrix.config }}
+          path: ${{ github.workspace }}/build/install
