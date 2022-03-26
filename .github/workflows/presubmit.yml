@@ -34,10 +34,16 @@ jobs:
           variant: sccache
           key: ${{ matrix.os }}
       - name: Configure
+        shell: bash
         run: |
-            set +x
+            set -ex
             mkdir build
             cd build
-            cmake -G Ninja -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ..
+            mkdir install
+            cmake .. -G Ninja \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install'
       - name: Build
         run: cmake --build ./build -j3
+      - name: Install
+        run: cmake --install ./build
