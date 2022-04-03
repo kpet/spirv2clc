@@ -66,7 +66,7 @@ static struct init {
 
 struct mock_program {
   mock_program(cl_context context, const std::string &&src)
-      : m_context(context), m_src(src) {
+      : m_context(context), m_src(src), m_build_status(CL_BUILD_NONE) {
     clRetainContext(m_context);
   }
 
@@ -74,10 +74,15 @@ struct mock_program {
 
   cl_context context() const { return m_context; }
   const std::string &src() const { return m_src; }
+  cl_build_status build_status() const { return m_build_status; }
+  void set_build_status(cl_build_status status) { m_build_status = status; }
+  const std::string &build_log() const { return m_build_log; }
 
 private:
   cl_context m_context;
   std::string m_src;
+  cl_build_status m_build_status;
+  std::string m_build_log;
 };
 
 static std::unordered_map<mock_program *, cl_program> gProgramMap;
@@ -130,7 +135,8 @@ cl_int CL_API_CALL clReleaseProgram(cl_program program) {
   return fnReleaseProgram(program);
 }
 
-bool save_string_to_file(const std::string &fname, const std::string &text) {
+static bool save_string_to_file(const std::string &fname,
+                                const std::string &text) {
   std::ofstream ofile{fname};
 
   if (!ofile.is_open()) {
@@ -171,6 +177,7 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
 
   for (unsigned i = 0; i < num_input_headers; i++) {
     std::filesystem::path header_file{tmp_folder / header_include_names[i]};
+    std::filesystem::create_directories(header_file.parent_path());
     auto hprog = reinterpret_cast<mock_program *>(input_headers[i]);
     if (!save_string_to_file(header_file.string(), hprog->src())) {
       return nullptr;
@@ -190,7 +197,7 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
 
   // Select device
   // TODO support multiple devices
-  if (num_devices != 1) {
+  if (num_devices > 1) {
     return nullptr;
   }
   cl_device_id device;
@@ -245,6 +252,7 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
   cmd_c_to_ir += CLANG;
   cmd_c_to_ir += " -O0 -w -c ";
   cmd_c_to_ir += " -target " + llvm_target;
+  cmd_c_to_ir += " -Xclang -no-opaque-pointers ";
   cmd_c_to_ir +=
       " -x cl " + soptions + " -Xclang -finclude-default-header -emit-llvm";
   cmd_c_to_ir += " -o " + bitcode_file.string();
@@ -254,9 +262,12 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
     log() << "Failed to compile OpenCL C to IR" << std::endl;
     return nullptr;
   }
+
   std::filesystem::path spv_file{tmp_folder / "original.spv"};
-  std::string cmd_ir_to_spv =
-      LLVMSPIRV + " -o " + spv_file.string() + " " + bitcode_file.string();
+  std::string cmd_ir_to_spv = LLVMSPIRV;
+  cmd_ir_to_spv += " --spirv-max-version=1.0";
+  cmd_ir_to_spv += " -o " + spv_file.string();
+  cmd_ir_to_spv += " " + bitcode_file.string();
   syserr = std::system(cmd_ir_to_spv.c_str());
   if (syserr != 0) {
     log() << "Failed to translate IR to SPIR-V" << std::endl;
@@ -286,7 +297,7 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
   buffer << ftranslated.rdbuf();
   translated = buffer.str();
 
-  // Create program
+  // Create programs
   const char *csrc = translated.c_str();
   clprog =
       fnCreateProgramWithSource(program->context(), 1, &csrc, nullptr, &err);
@@ -294,6 +305,17 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
     return nullptr;
   }
   gProgramMap[program] = clprog;
+
+  for (unsigned i = 0; i < num_input_headers; i++) {
+    auto hprog = reinterpret_cast<mock_program *>(input_headers[i]);
+    const char *src = hprog->src().c_str();
+    clprog =
+        fnCreateProgramWithSource(program->context(), 1, &src, nullptr, &err);
+    if (err != CL_SUCCESS) {
+      return nullptr;
+    }
+    gProgramMap[hprog] = clprog;
+  }
 
   return clprog;
 }
@@ -307,9 +329,13 @@ cl_int CL_API_CALL clBuildProgram(
   cl_int ret = CL_BUILD_SUCCESS;
   auto prog = reinterpret_cast<mock_program *>(program);
   if (gProgramMap.count(prog)) {
-    program = compile(prog, num_devices, device_list, options);
-    if (program == nullptr) {
+    // FIXME capture build log and store in wrapper
+    auto program_sub = compile(prog, num_devices, device_list, options);
+    if (program_sub == nullptr) {
+      prog->set_build_status(CL_BUILD_ERROR);
       ret = CL_BUILD_PROGRAM_FAILURE;
+    } else {
+      program = program_sub;
     }
   }
 
@@ -334,16 +360,27 @@ cl_int clCompileProgram(
   cl_int ret = CL_BUILD_SUCCESS;
   auto prog = reinterpret_cast<mock_program *>(program);
   if (gProgramMap.count(prog)) {
-    program = compile(prog, num_devices, device_list, options,
-                      num_input_headers, input_headers, header_include_names);
-    if (program == nullptr) {
+    // FIXME capture build log and store in wrapper
+    auto program_sub =
+        compile(prog, num_devices, device_list, options, num_input_headers,
+                input_headers, header_include_names);
+    if (program_sub == nullptr) {
+      prog->set_build_status(CL_BUILD_ERROR);
       ret = CL_BUILD_PROGRAM_FAILURE;
+    } else {
+      program = program_sub;
     }
   }
 
   if (ret == CL_BUILD_SUCCESS) {
+    std::vector<cl_program> header_programs;
+    for (unsigned i = 0; i < num_input_headers; i++) {
+      auto hprog = reinterpret_cast<mock_program *>(input_headers[i]);
+      header_programs.push_back(gProgramMap.at(hprog));
+    }
+
     ret = fnCompileProgram(program, num_devices, device_list, options,
-                           num_input_headers, input_headers,
+                           num_input_headers, header_programs.data(),
                            header_include_names, nullptr, nullptr);
   }
 
@@ -393,6 +430,7 @@ cl_int CL_API_CALL clGetProgramInfo(cl_program program,
       size_t size_ret;
       cl_uint val_uint;
       std::vector<cl_device_id> val_devices;
+      cl_context val_context;
 
       switch (param_name) {
       case CL_PROGRAM_NUM_DEVICES: {
@@ -421,11 +459,23 @@ cl_int CL_API_CALL clGetProgramInfo(cl_program program,
         size_ret = prog->src().size() + 1; // Include NUL terminator
         break;
       }
+      case CL_PROGRAM_CONTEXT: {
+        val_context = prog->context();
+        copy_ptr = &val_context;
+        size_ret = sizeof(val_context);
+        break;
+      }
+      case CL_PROGRAM_REFERENCE_COUNT: {
+        val_uint = 1;
+        copy_ptr = &val_uint;
+        size_ret = sizeof(val_uint);
+        break;
+      }
       default:
         ret = CL_INVALID_VALUE;
       }
 
-      if ((param_value != nullptr) && (param_value_size == size_ret)) {
+      if ((param_value != nullptr) && (param_value_size >= size_ret)) {
         memcpy(param_value, copy_ptr, size_ret);
       }
 
@@ -447,6 +497,36 @@ cl_int CL_API_CALL clGetProgramBuildInfo(
   auto prog = reinterpret_cast<mock_program *>(program);
   if (gProgramMap.count(prog)) {
     program = gProgramMap.at(prog);
+    if (program == nullptr) {
+      cl_int ret = CL_SUCCESS;
+      const void *copy_ptr;
+      size_t size_ret;
+      cl_build_status val_build_status;
+
+      switch (param_name) {
+      case CL_PROGRAM_BUILD_STATUS:
+        val_build_status = prog->build_status();
+        copy_ptr = &val_build_status;
+        size_ret = sizeof(val_build_status);
+        break;
+      case CL_PROGRAM_BUILD_LOG:
+        copy_ptr = prog->build_log().data();
+        size_ret = prog->build_log().size() + 1;
+        break;
+      default:
+        ret = CL_INVALID_VALUE;
+      }
+
+      if ((param_value != nullptr) && (param_value_size >= size_ret)) {
+        memcpy(param_value, copy_ptr, size_ret);
+      }
+
+      if (param_value_size_ret != nullptr) {
+        *param_value_size_ret = size_ret;
+      }
+
+      return ret;
+    }
   }
 
   return fnGetProgramBuildInfo(program, device, param_name, param_value_size,
