@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -154,25 +155,24 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
                           const char **header_include_names = nullptr) {
   auto clprog = reinterpret_cast<cl_program>(program);
   // Store source to temporary file
-  std::string tmp_folder;
-  std::string tmp_template{"spirv2clc-XXXXXX"};
-  const char *tmp = mkdtemp(&tmp_template.front());
+  char tmp_template[] = "spirv2clc-XXXXXX";
+  const char *tmp = mkdtemp(tmp_template);
   if (tmp == nullptr) {
     return nullptr;
   }
 
-  tmp_folder = tmp;
-  log() << "Created folder " << tmp_folder << std::endl;
+  std::filesystem::path tmp_folder{tmp};
+  log() << "Created folder " << tmp_folder.string() << std::endl;
 
-  std::string src_file{tmp_folder + "/original.cl"};
+  std::filesystem::path src_file{tmp_folder / "original.cl"};
   if (!save_string_to_file(src_file, program->src())) {
     return nullptr;
   }
 
   for (unsigned i = 0; i < num_input_headers; i++) {
-    std::string header_file{tmp_folder + "/" + header_include_names[i]};
+    std::filesystem::path header_file{tmp_folder / header_include_names[i]};
     auto hprog = reinterpret_cast<mock_program *>(input_headers[i]);
-    if (!save_string_to_file(header_file, hprog->src())) {
+    if (!save_string_to_file(header_file.string(), hprog->src())) {
       return nullptr;
     }
   }
@@ -180,7 +180,7 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
   int syserr;
 
   // Translate to SPIR-V
-  std::string bitcode_file{tmp_folder + "/original.bc"};
+  std::filesystem::path bitcode_file{tmp_folder / "original.bc"};
   std::string soptions;
   if (options != nullptr) {
     soptions += options;
@@ -244,16 +244,16 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
   cmd_c_to_ir += " -target " + llvm_target;
   cmd_c_to_ir +=
       " -x cl " + soptions + " -Xclang -finclude-default-header -emit-llvm";
-  cmd_c_to_ir += " -o " + bitcode_file;
-  cmd_c_to_ir += " " + src_file;
+  cmd_c_to_ir += " -o " + bitcode_file.string();
+  cmd_c_to_ir += " " + src_file.string();
   syserr = std::system(cmd_c_to_ir.c_str());
   if (syserr != 0) {
     log() << "Failed to compile OpenCL C to IR" << std::endl;
     return nullptr;
   }
-  std::string spv_file{tmp_folder + "/original.spv"};
+  std::filesystem::path spv_file{tmp_folder / "original.spv"};
   std::string cmd_ir_to_spv =
-      LLVMSPIRV + " -o " + spv_file + " " + bitcode_file;
+      LLVMSPIRV + " -o " + spv_file.string() + " " + bitcode_file.string();
   syserr = std::system(cmd_ir_to_spv.c_str());
   if (syserr != 0) {
     log() << "Failed to translate IR to SPIR-V" << std::endl;
@@ -261,9 +261,9 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
   }
 
   // Translate SPIR-V back to C
-  std::string translated_source{tmp_folder + "/translated.cl"};
+  std::filesystem::path translated_source{tmp_folder / "translated.cl"};
   std::string cmd_spv_to_c =
-      SPIRV2CLC + " " + spv_file + " > " + translated_source;
+      SPIRV2CLC + " " + spv_file.string() + " > " + translated_source.string();
   syserr = std::system(cmd_spv_to_c.c_str());
   if (syserr != 0) {
     log() << "Failed to translate SPIR-V to OpenCL C" << std::endl;
