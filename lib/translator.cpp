@@ -37,6 +37,8 @@ std::string rounding_mode(SpvFPRoundingMode mode) {
     return "rtp";
   case SpvFPRoundingModeRTN:
     return "rtn";
+  case SpvFPRoundingModeMax:
+    break;
   }
   return "UNKNOWN ROUNDING MODE";
 }
@@ -44,7 +46,29 @@ std::string rounding_mode(SpvFPRoundingMode mode) {
 const spvtools::MessageConsumer spvtools_message_consumer =
     [](spv_message_level_t level, const char *, const spv_position_t &position,
        const char *message) {
-      printf("spvtools says '%s' at position %zu", message, position.index);
+      const char *levelstr;
+      switch (level) {
+      case SPV_MSG_FATAL:
+        levelstr = "FATAL";
+        break;
+      case SPV_MSG_INTERNAL_ERROR:
+        levelstr = "INTERNAL ERROR";
+        break;
+      case SPV_MSG_ERROR:
+        levelstr = "ERROR";
+        break;
+      case SPV_MSG_WARNING:
+        levelstr = "WARNING";
+        break;
+      case SPV_MSG_INFO:
+        levelstr = "INFO";
+        break;
+      case SPV_MSG_DEBUG:
+        levelstr = "DEBUG";
+        break;
+      }
+      printf("spvtools says '%s' (%s) at position %zu", message, levelstr,
+             position.index);
     };
 
 } // namespace
@@ -79,7 +103,6 @@ uint32_t translator::array_type_get_length(uint32_t tyid) const {
   auto type = type_for(tyid);
   auto tarray = type->AsArray();
   auto const &length_info = tarray->length_info();
-  uint64_t num_elems;
   if (length_info.words[0] !=
       spvtools::opt::analysis::Array::LengthInfo::kConstant) {
     std::cerr << "UNIMPLEMENTED array type with non-constant length"
@@ -193,6 +216,7 @@ std::string translator::src_type_boolean_for_val(uint32_t val) const {
         case 64:
           return "long" + std::to_string(ecnt);
         }
+        break;
       }
       case Type::Kind::kFloat: {
         auto width = etype->AsFloat()->width();
@@ -204,7 +228,10 @@ std::string translator::src_type_boolean_for_val(uint32_t val) const {
         case 64:
           return "long" + std::to_string(ecnt);
         }
+        break;
       }
+      default:
+        break;
       }
     }
   }
@@ -384,7 +411,6 @@ static std::unordered_map<OpenCLLIB::Entrypoints, const std::string>
 
 std::string
 translator::translate_extended_unary(const Instruction &inst) const {
-  auto rtype = inst.type_id();
   auto extinst =
       static_cast<OpenCLLIB::Entrypoints>(inst.GetSingleWordOperand(3));
   auto val = inst.GetSingleWordOperand(4);
@@ -393,9 +419,7 @@ translator::translate_extended_unary(const Instruction &inst) const {
 
 bool translator::translate_extended_instruction(const Instruction &inst,
                                                 std::string &src) {
-  auto rtype = inst.type_id();
   auto result = inst.result_id();
-  auto set = inst.GetSingleWordOperand(2);
   auto instruction =
       static_cast<OpenCLLIB::Entrypoints>(inst.GetSingleWordOperand(3));
 
@@ -712,7 +736,7 @@ bool translator::translate_instruction(const Instruction &inst,
     auto func = inst.GetSingleWordOperand(2);
     sval = var_for(func) + "(";
     const char *sep = "";
-    for (int i = 3; i < inst.NumOperands(); i++) {
+    for (unsigned i = 3; i < inst.NumOperands(); i++) {
       auto param = inst.GetSingleWordOperand(i);
       sval += sep;
       sval += var_for(param);
@@ -734,7 +758,7 @@ bool translator::translate_instruction(const Instruction &inst,
   case SpvOpLifetimeStop:
     break;
   case SpvOpVariable: {
-    auto storage = inst.GetSingleWordOperand(2);
+    // auto storage = inst.GetSingleWordOperand(2); TODO make storage explicit?
     assign_result = false;
     auto varty = type_for(rtype)->AsPointer()->pointee_type();
     auto storagename = var_for(result) + "_storage";
@@ -779,7 +803,7 @@ bool translator::translate_instruction(const Instruction &inst,
     auto elem = inst.GetSingleWordOperand(3);
     sval = "&" + var_for(base) + "[" + var_for(elem) + "]";
     const Type *cty = type_for_val(base)->AsPointer()->pointee_type();
-    for (int i = 4; i < inst.NumOperands(); i++) {
+    for (unsigned i = 4; i < inst.NumOperands(); i++) {
       auto idx = inst.GetSingleWordOperand(i);
       sval = src_access_chain(sval, cty, idx);
       switch (cty->kind()) {
@@ -789,7 +813,7 @@ bool translator::translate_instruction(const Instruction &inst,
       case Type::Kind::kStruct:
         cty = cty->AsStruct()->element_types()[idx];
         break;
-      deafult:
+      default:
         std::cerr << "UNIMPLEMENTED access chain type " << cty->kind()
                   << std::endl;
         return false;
@@ -807,7 +831,7 @@ bool translator::translate_instruction(const Instruction &inst,
   case SpvOpImageSampleExplicitLod: {
     auto sampledimage = inst.GetSingleWordOperand(2);
     auto coord = inst.GetSingleWordOperand(3);
-    auto operands = inst.GetSingleWordOperand(4);
+    // auto operands = inst.GetSingleWordOperand(4); FIXME translate
     bool is_float = type_for(rtype)->kind() == Type::Kind::kFloat;
     bool is_float_coord = type_for_val(coord)->kind() == Type::Kind::kFloat;
 
@@ -876,7 +900,7 @@ bool translator::translate_instruction(const Instruction &inst,
 #endif
   case SpvOpImageQuerySizeLod: {
     auto image = inst.GetSingleWordOperand(2);
-    auto lod = inst.GetSingleWordOperand(3); // FIXME validate
+    // auto lod = inst.GetSingleWordOperand(3); // FIXME validate
     sval = "((" + src_type(rtype) + ")(";
     auto tyimg = type_for_val(image);
     sval += "get_image_width(" + var_for(image) + ")";
@@ -979,7 +1003,7 @@ bool translator::translate_instruction(const Instruction &inst,
   case SpvOpCompositeConstruct: {
     sval = "{";
     const char *sep = "";
-    for (int i = 2; i < inst.NumOperands(); i++) {
+    for (unsigned i = 2; i < inst.NumOperands(); i++) {
       auto mem = inst.GetSingleWordOperand(i);
       sval += sep;
       sval += var_for(mem);
@@ -1017,7 +1041,7 @@ bool translator::translate_instruction(const Instruction &inst,
     auto n1 = type_for_val(v1)->AsVector()->element_count();
     sval = "((" + src_type(rtype) + ")(";
     const char *sep = "";
-    for (int i = 4; i < inst.NumOperands(); i++) {
+    for (unsigned i = 4; i < inst.NumOperands(); i++) {
       auto comp = inst.GetSingleWordOperand(i);
       auto srcvec = v1;
       sval += sep;
@@ -1306,7 +1330,7 @@ bool translator::translate_instruction(const Instruction &inst,
     auto def = inst.GetSingleWordOperand(1);
     src = "switch (" + var_for(select) + "){";
     src += "default: goto " + var_for(def) + ";";
-    for (int i = 2; i < inst.NumOperands(); i += 2) {
+    for (unsigned i = 2; i < inst.NumOperands(); i += 2) {
       auto &val = inst.GetOperand(i);
       auto &target = inst.GetOperand(i + 1);
       src += "case " + std::to_string(val.AsLiteralUint64()) + ": goto " +
@@ -1811,7 +1835,8 @@ bool translator::translate_debug_instructions() {
 
   // Debug 3
   for (auto &inst : m_ir->module()->debugs3()) {
-    std::cerr << "UNIMPLEMENTED debug instructions in 7c.\n";
+    std::cerr << "UNIMPLEMENTED debug instruction " << inst.opcode()
+              << " in 7c.\n";
     return false;
   }
 
@@ -1935,7 +1960,7 @@ bool translator::translate_annotations() {
       if (has_alignment) {
         alignment = m_alignments.at(group);
       }
-      for (int i = 1; i < inst.NumOperands(); i++) {
+      for (unsigned i = 1; i < inst.NumOperands(); i++) {
         auto target = inst.GetSingleWordOperand(i);
         if (restrict) {
           m_restricts.insert(target);
@@ -2096,13 +2121,13 @@ bool translator::translate_type(const Instruction &inst) {
     break;
   }
   case SpvOpTypeImage: {
-    auto sampledty = inst.GetSingleWordOperand(1);
+    // auto sampledty = inst.GetSingleWordOperand(1);
     auto dim = inst.GetSingleWordOperand(2);
     auto depth = inst.GetSingleWordOperand(3);
     auto arrayed = inst.GetSingleWordOperand(4);
     auto ms = inst.GetSingleWordOperand(5);
     auto sampled = inst.GetSingleWordOperand(6);
-    auto format = inst.GetSingleWordOperand(7);
+    // auto format = inst.GetSingleWordOperand(7);
     auto qual = inst.GetSingleWordOperand(8);
 
     if ((depth != 0) || (arrayed != 0) || (ms != 0) || (sampled != 0)) {
@@ -2547,14 +2572,13 @@ bool translator::translate_function(Function &func) {
   // First collect information about OpPhi's
   for (auto &bb : func) {
     for (auto &inst : bb) {
-      auto rtype = inst.type_id();
       auto result = inst.result_id();
       if (inst.opcode() != SpvOpPhi) {
         continue;
       }
       m_phi_vals[&func].push_back(result);
 
-      for (int i = 2; i < inst.NumOperands(); i += 2) {
+      for (unsigned i = 2; i < inst.NumOperands(); i += 2) {
         auto var = inst.GetSingleWordOperand(i);
         auto parent = inst.GetSingleWordOperand(i + 1);
         auto parentbb = func.FindBlock(parent);

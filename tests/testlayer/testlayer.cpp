@@ -89,7 +89,7 @@ cl_program CL_API_CALL clCreateProgramWithSource(cl_context context,
                                                  cl_int *errcode_ret) {
   // Get full source
   std::string src;
-  for (int i = 0; i < count; i++) {
+  for (cl_uint i = 0; i < count; i++) {
     if (lengths == nullptr) {
       src += strings[i];
     } else if (lengths[i] == 0) {
@@ -190,6 +190,9 @@ static cl_program compile(mock_program *program, cl_uint num_devices,
 
   // Select device
   // TODO support multiple devices
+  if (num_devices != 1) {
+    return nullptr;
+  }
   cl_device_id device;
   if (device_list != nullptr) {
     device = device_list[0];
@@ -339,9 +342,9 @@ cl_int clCompileProgram(
   }
 
   if (ret == CL_BUILD_SUCCESS) {
-    auto ret = fnCompileProgram(program, num_devices, device_list, options,
-                                num_input_headers, input_headers,
-                                header_include_names, nullptr, nullptr);
+    ret = fnCompileProgram(program, num_devices, device_list, options,
+                           num_input_headers, input_headers,
+                           header_include_names, nullptr, nullptr);
   }
 
   if (pfn_notify != nullptr) {

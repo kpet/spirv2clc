@@ -23,6 +23,28 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(GenerateExportHeader)
 
+# Enable colour output wiht Ninja
+include(CheckCXXCompilerFlag)
+
+macro(AddCXXFlagIfSupported flag test)
+   CHECK_CXX_COMPILER_FLAG(${flag} ${test})
+   if( ${${test}} )
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+   endif()
+endmacro()
+
+if("Ninja" STREQUAL ${CMAKE_GENERATOR})
+    AddCXXFlagIfSupported(-fdiagnostics-color COMPILER_SUPPORTS_COLOR_DIAGNOSTICS)
+endif()
+
+# Enable compiler warnings
+if (MSVC)
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(-Wall -Wextra -pedantic)
+endif()
+
+# Add SPIRV-Tools
 set(SPIRV-Headers_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Headers)
 set(SPIRV_TOOLS_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools)
 set(SPIRV_TOOLS_BINARY_DIR ${CMAKE_BINARY_DIR}/external/SPIRV-Tools)
