@@ -42,6 +42,7 @@ jobs:
             cd build
             mkdir install
             cmake .. -G Ninja \
+              -DSPIRV_WERROR=OFF \
               -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
               -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install'
