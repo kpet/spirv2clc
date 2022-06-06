@@ -675,7 +675,8 @@ std::string translator::translate_binop_signed(const Instruction &inst) const {
   return src_as_signed(v1) + " " + srcop + " " + src_as_signed(v2);
 }
 
-std::string translator::builtin_vector_extract(uint32_t id, uint32_t idx, bool constant) const {
+std::string translator::builtin_vector_extract(uint32_t id, uint32_t idx,
+                                               bool constant) const {
   std::string arg;
   if (constant) {
     arg = std::to_string(idx);
@@ -699,7 +700,8 @@ std::string translator::builtin_vector_extract(uint32_t id, uint32_t idx, bool c
   case SpvBuiltInNumWorkgroups:
     return src_function_call("get_num_groups", arg);
   default:
-    std::cerr << "UNIMPLEMENTED built-in in builtin_vector_extract" << std::endl;
+    std::cerr << "UNIMPLEMENTED built-in in builtin_vector_extract"
+              << std::endl;
     return "UNIMPLEMENTED";
   }
 }
@@ -1019,8 +1021,8 @@ bool translator::translate_instruction(const Instruction &inst,
     if (m_builtin_values.count(vec)) {
       sval = builtin_vector_extract(vec, idx, false);
     } else {
-      sval = "((" + src_type(rtype) + "*)&" + var_for(vec) + ")[" + var_for(idx) +
-           "]";
+      sval = "((" + src_type(rtype) + "*)&" + var_for(vec) + ")[" +
+             var_for(idx) + "]";
     }
     break;
   }
@@ -1754,11 +1756,11 @@ std::unordered_set<std::string> gReservedIdentifiers = {
     "pipe",
 };
 
-bool translator::is_valid_identifier(const std::string& name) const {
+bool translator::is_valid_identifier(const std::string &name) const {
   // Check the name isn't already used
   for (auto it = m_names.begin(); it != m_names.end(); ++it) {
     if (it->second == name) {
-        return false;
+      return false;
     }
   }
 
@@ -1766,7 +1768,7 @@ bool translator::is_valid_identifier(const std::string& name) const {
   return gReservedIdentifiers.count(name) == 0;
 }
 
-std::string translator::make_valid_identifier(const std::string& name) const {
+std::string translator::make_valid_identifier(const std::string &name) const {
   std::string newname = name;
 
   bool is_valid = is_valid_identifier(newname);
@@ -1777,7 +1779,7 @@ std::string translator::make_valid_identifier(const std::string& name) const {
   is_valid = is_valid_identifier(newname);
 
   int name_iter = 1;
-  while(!is_valid) {
+  while (!is_valid) {
     std::string candidate = newname + std::to_string(name_iter);
     is_valid = is_valid_identifier(candidate);
     if (!is_valid) {
@@ -1995,7 +1997,8 @@ bool translator::translate_annotations() {
   return true;
 }
 
-std::string translator::src_pointer_type(uint32_t storage, uint32_t tyid, bool signedty) const {
+std::string translator::src_pointer_type(uint32_t storage, uint32_t tyid,
+                                         bool signedty) const {
   std::string typestr;
   if (type_for(tyid)->kind() == Type::Kind::kArray) {
     auto tarray = type_for(tyid)->AsArray();
@@ -2003,9 +2006,9 @@ std::string translator::src_pointer_type(uint32_t storage, uint32_t tyid, bool s
     typestr += src_type(type_id_for(elemty));
   } else {
     if (signedty) {
-        typestr += src_type_signed(tyid);
+      typestr += src_type_signed(tyid);
     } else {
-        typestr += src_type(tyid);
+      typestr += src_type(tyid);
     }
   }
   typestr += " ";
@@ -2023,8 +2026,7 @@ std::string translator::src_pointer_type(uint32_t storage, uint32_t tyid, bool s
   case SpvStorageClassFunction:
     break;
   default:
-    std::cerr << "UNIMPLEMENTED pointer storage class " << storage
-              << std::endl;
+    std::cerr << "UNIMPLEMENTED pointer storage class " << storage << std::endl;
     return "UNIMPLEMENTED";
   }
 
@@ -2410,7 +2412,7 @@ bool translator::translate_types_values() {
         const char *sep = "";
         uint32_t num_elems = array_type_get_length(rtype);
         if (num_elems == 0) {
-            return false;
+          return false;
         }
 
         for (uint32_t opidx = 2; opidx < num_elems + 2; opidx++) {
@@ -2450,7 +2452,8 @@ bool translator::translate_types_values() {
       auto storage = inst.GetSingleWordOperand(2);
 
       if (storage == SpvStorageClassWorkgroup) {
-        std::string local_var_decl = "local " + src_type_memory_object_declaration(typointeeid, result);
+        std::string local_var_decl =
+            "local " + src_type_memory_object_declaration(typointeeid, result);
         m_local_variable_decls[result] = local_var_decl;
       } else if (storage == SpvStorageClassUniformConstant) {
         m_src << "constant "
@@ -2541,16 +2544,18 @@ bool translator::translate_function(Function &func) {
   // translating global variables.
   if (entrypoint) {
     std::unordered_set<uint32_t> used_globals_in_local_as;
-    IRContext::ProcessFunction process_fn = [this, &used_globals_in_local_as](Function* func) -> bool {
+    IRContext::ProcessFunction process_fn =
+        [this, &used_globals_in_local_as](Function *func) -> bool {
       for (auto &bb : *func) {
         for (auto &inst : bb) {
-          for (auto& op : inst) {
+          for (auto &op : inst) {
             if (spvIsIdType(op.type)) {
               auto used_inst_id = op.AsId();
               auto defuse = m_ir->get_def_use_mgr();
               auto used_inst = defuse->GetDef(used_inst_id);
               if (used_inst->opcode() == SpvOpVariable) {
-                if (used_inst->GetSingleWordOperand(2) == SpvStorageClassWorkgroup) {
+                if (used_inst->GetSingleWordOperand(2) ==
+                    SpvStorageClassWorkgroup) {
                   used_globals_in_local_as.insert(used_inst_id);
                 }
               }
@@ -2734,8 +2739,8 @@ int translator::translate(const std::string &assembly, std::string *srcout) {
 int translator::translate(const std::vector<uint32_t> &binary,
                           std::string *srcout) {
 
-  m_ir = BuildModule(m_target_env, spvtools_message_consumer,
-                     binary.data(), binary.size());
+  m_ir = BuildModule(m_target_env, spvtools_message_consumer, binary.data(),
+                     binary.size());
 
   if (!validate_module(binary)) {
     return 1;

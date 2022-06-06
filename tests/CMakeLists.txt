@@ -16,3 +16,4 @@ if(NOT WIN32)
   # testlayer doesn't work on Windows
   add_subdirectory(testlayer)
 endif()
+add_subdirectory(loadlayer)
