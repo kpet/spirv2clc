@@ -93,13 +93,14 @@ inline std::set<std::shared_ptr<_cl_device_id>> _devices{
 inline std::set<std::shared_ptr<_cl_context>> _contexts;
 
 template <typename T> cl_int CL_INVALID;
-template <> cl_int CL_INVALID<cl_platform_id> = CL_INVALID_PLATFORM;
-template <> cl_int CL_INVALID<cl_device_id> = CL_INVALID_DEVICE;
-template <> cl_int CL_INVALID<cl_context> = CL_INVALID_CONTEXT;
+template <> inline cl_int CL_INVALID<cl_platform_id> = CL_INVALID_PLATFORM;
+template <> inline cl_int CL_INVALID<cl_device_id> = CL_INVALID_DEVICE;
+template <> inline cl_int CL_INVALID<cl_context> = CL_INVALID_CONTEXT;
 
 template <typename T> T &_objects;
 template <>
-std::set<std::shared_ptr<_cl_device_id>> &_objects<cl_device_id> = _devices;
+inline std::set<std::shared_ptr<_cl_device_id>> &_objects<cl_device_id> =
+    _devices;
 template <>
-std::set<std::shared_ptr<_cl_context>> &_objects<cl_context> = _contexts;
+inline std::set<std::shared_ptr<_cl_context>> &_objects<cl_context> = _contexts;
 } // namespace spirv2clc
