@@ -34,20 +34,35 @@ jobs:
         with:
           variant: sccache
           key: ${{ matrix.os }}-${{ matrix.config }}
-      - name: Configure
+      - name: Configure (Linux & MacOS)
+        if: ! containes(${{ matrix.os }}, windows)
         shell: bash
         run: |
-            set -ex
-            mkdir build
-            cd build
-            mkdir install
-            cmake .. -G Ninja \
-              -DSPIRV_WERROR=OFF \
-              -DSPIRV_SKIP_EXECUTABLES=ON \
-              -DSPIRV_SKIP_TESTS=ON \
-              -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install'
+            cmake \
+              -G Ninja \
+              -D SPIRV_WERROR=OFF \
+              -D SPIRV_SKIP_EXECUTABLES=ON \
+              -D SPIRV_SKIP_TESTS=ON \
+              -D CMAKE_BUILD_TYPE=${{ matrix.config }} \
+              -D CMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -D CMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install' \
+              -S . \
+              -B ./build
+      - name: Configure (Windows)
+        if: containes(${{ matrix.os }}, windows)
+        shell: pwsh
+        run: |
+            cmake `
+              -G "Visual Studio 17 2022" `
+              -A x64 `
+              -T v143 `
+              -D SPIRV_WERROR=OFF `
+              -D SPIRV_SKIP_EXECUTABLES=ON `
+              -D SPIRV_SKIP_TESTS=ON `
+              -D CMAKE_BUILD_TYPE=${{ matrix.config }} `
+              -D CMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install' `
+              -S . `
+              -B ./build
       - name: Build
         run: cmake --build ./build --config ${{ matrix.config }} -j3
       - name: Test
