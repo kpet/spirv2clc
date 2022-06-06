@@ -74,7 +74,7 @@ jobs:
       - name: Test
         run: ctest --test-dir ./build --build-config ${{ matrix.config }} --output-on-failure -j3
       - name: Install
-        run: cmake --install ./build
+        run: cmake --install ./build --config ${{ matrix.config }}
       - uses: actions/upload-artifact@v3
         with:
           name: spirv2clc-${{ matrix.os }}-${{ matrix.config }}
