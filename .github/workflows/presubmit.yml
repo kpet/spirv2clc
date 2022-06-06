@@ -52,7 +52,7 @@ jobs:
         if: ${{ contains(matrix.os, 'windows') }}
         shell: pwsh
         run: |
-          $ICD_REG_PATH = 'HKLM:\SOFTWARE\Khronos\OpenCL\Layers'
+          $ICD_REG_PATH = 'HKLM:\SOFTWARE\Khronos\OpenCL\Vendors'
           $LAYER_REG_PATH = 'HKLM:\SOFTWARE\Khronos\OpenCL\Layers'
           New-Item -Type Directory ${ICD_REG_PATH}   -Force | Out-Null
           New-Item -Type Directory ${LAYER_REG_PATH} -Force | Out-Null
