@@ -1,27 +1,74 @@
 // OpenCL includes
-#include <CL/opencl.hpp>
+#include <CL/opencl.h>
 
 // C++ Standard includes
 #include <vector>
 #include <iostream>
 #include <exception>
 
-bool platform_supports_spirv(cl::Platform platform)
+bool platform_supports_spirv(cl_platform_id platform)
 {
-	return platform.getInfo<CL_PLATFORM_EXTENSIONS>().find("cl_khr_il_program") != std::string::npos;
+	size_t ret_size;
+	clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, nullptr, &ret_size);
+	std::string extensions(ret_size, '\0');
+	clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, ret_size, extensions.data(), nullptr);
+	return extensions.find("cl_khr_il_program") != std::string::npos;
 }
 
-bool device_supports_spirv(cl::Device device)
+bool device_supports_spirv(cl_device_id device)
 {
-	return device.getInfo<CL_DEVICE_EXTENSIONS>().find("cl_khr_il_program") != std::string::npos;
+	size_t ret_size;
+	clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, 0, nullptr, &ret_size);
+	std::string extensions(ret_size, '\0');
+	clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, ret_size, extensions.data(), nullptr);
+	return extensions.find("cl_khr_il_program") != std::string::npos;
+}
+
+std::vector<cl_platform_id> get_platforms()
+{
+	cl_uint num_platforms;
+	clGetPlatformIDs(0, nullptr, &num_platforms);
+	std::vector<cl_platform_id> platforms(num_platforms);
+	clGetPlatformIDs(num_platforms, platforms.data(), nullptr);
+	return platforms;
+}
+
+std::vector<cl_device_id> get_devices(cl_platform_id platform)
+{
+	cl_uint num_devices;
+	clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, nullptr, &num_devices);
+	std::vector<cl_device_id> devices(num_devices);
+	clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, num_devices, devices.data(), nullptr);
+	return devices;
+}
+
+template <int CL_INFO>
+std::string get_platform_info(cl_platform_id platform)
+{
+	size_t ret_size;
+	clGetPlatformInfo(platform, CL_INFO, 0, nullptr, &ret_size);
+	std::string info(ret_size, '\0');
+	clGetPlatformInfo(platform, CL_INFO, ret_size, info.data(), nullptr);
+	info.pop_back(); // pop null-terminator
+	return info;
+}
+
+template <int CL_INFO>
+std::string get_device_info(cl_device_id device)
+{
+	size_t ret_size;
+	clGetDeviceInfo(device, CL_INFO, 0, nullptr, &ret_size);
+	std::string info(ret_size, '\0');
+	clGetDeviceInfo(device, CL_INFO, ret_size, info.data(), nullptr);
+	info.pop_back(); // pop null-terminator
+	return info;
 }
 
 int main(int argc, char* argv[])
 {
 	try // Any error results in program termination
 	{
-		std::vector<cl::Platform> platforms;
-		cl::Platform::get(&platforms);
+		std::vector<cl_platform_id> platforms = get_platforms();
 
 		if (platforms.empty()) throw std::runtime_error{ "No OpenCL platforms found." };
 
@@ -31,9 +78,9 @@ int main(int argc, char* argv[])
 			for (const auto& platform : platforms)
 			{
 				std::cout <<
-					"\t" << platform.getInfo<CL_PLATFORM_VENDOR>() <<
+					"\t" << get_platform_info<CL_PLATFORM_VENDOR>(platform) <<
 					" (" <<
-					platform.getInfo<CL_PLATFORM_VERSION>() <<
+					get_platform_info<CL_PLATFORM_VERSION>(platform) <<
 					")" <<
 					std::endl;
 				std::cout <<
@@ -48,12 +95,12 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			cl::Platform platform = platforms.at(argc > 1 ? std::atoi(argv[1]) : 0);
+			cl_platform_id platform = platforms.at(argc > 1 ? std::atoi(argv[1]) : 0);
 			std::cout <<
 				"Selected platform: " <<
-				platform.getInfo<CL_PLATFORM_VENDOR>() <<
+				get_platform_info<CL_PLATFORM_VENDOR>(platform) <<
 				" (" <<
-				platform.getInfo<CL_PLATFORM_VERSION>() <<
+				get_platform_info<CL_PLATFORM_VERSION>(platform) <<
 				")" <<
 				std::endl;
 			std::cout <<
@@ -65,31 +112,14 @@ int main(int argc, char* argv[])
 				) <<
 				std::endl;
 
-			std::vector<cl::Device> devices;
-			platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+			std::vector<cl_device_id> devices = get_devices(platform);
 
 			if (devices.empty()) throw std::runtime_error{ "No devices found on selected platform." };
-/*
-			std::cout << "Found device" << (devices.size() > 1 ? "s" : "") << ":" << std::endl;
-			for (const auto& device : devices)
-			{
-				std::cout <<
-					"\t" << device.getInfo<CL_DEVICE_NAME>() <<
-					std::endl;
-				std::cout <<
-					"\t\t" <<
-					(
-						device.getInfo<CL_DEVICE_EXTENSIONS>().find("cl_khr_il_program") != std::string::npos ?
-							"Supports cl_khr_il_program" :
-							"Doesn't support cl_khr_il_program"
-					) <<
-					std::endl;
-			}
-*/
-			cl::Device device = devices.at(argc > 2 ? std::atoi(argv[2]) : 0);
+
+			cl_device_id device = devices.at(argc > 2 ? std::atoi(argv[2]) : 0);
 			std::cout <<
 				"Selected device: " <<
-				device.getInfo<CL_DEVICE_NAME>() <<
+				get_device_info<CL_DEVICE_NAME>(device) <<
 				std::endl;
 			std::cout <<
 				"\t\t" <<
@@ -100,11 +130,6 @@ int main(int argc, char* argv[])
 				) <<
 				std::endl;
 			}
-	}
-	catch (cl::Error& error) // If any OpenCL error occurs
-	{
-		std::cerr << error.what() << "(" << error.err() << ")" << std::endl;
-		std::exit(error.err());
 	}
 	catch (std::exception& error) // If STL/CRT error occurs
 	{
