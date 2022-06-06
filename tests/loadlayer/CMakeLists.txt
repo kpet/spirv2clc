@@ -28,8 +28,8 @@ target_link_libraries(layerloadicd ${CMAKE_DL_LIBS})
 target_compile_definitions(layerloadicd PRIVATE CL_TARGET_OPENCL_VERSION=300)
 
 add_executable(layerloadtest layerloadtest.cpp)
-find_package(OpenCL CONFIG REQUIRED COMPONENTS OpenCL HeadersCpp)
-target_link_libraries(layerloadtest PRIVATE OpenCL::OpenCL OpenCL::HeadersCpp)
+target_include_directories(layerloadicd PRIVATE ${OPENCL_HEADERS_DIR})
+target_link_libraries(layerloadtest PRIVATE OpenCL)
 target_compile_definitions(layerloadtest
   PRIVATE
     CL_HPP_TARGET_OPENCL_VERSION=300

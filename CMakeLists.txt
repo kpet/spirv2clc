@@ -48,12 +48,15 @@ else()
 endif()
 
 # Add SPIRV-Tools
-set(SPIRV-Headers_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Headers)
-set(SPIRV_TOOLS_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools)
-set(SPIRV_TOOLS_BINARY_DIR ${CMAKE_BINARY_DIR}/external/SPIRV-Tools)
-add_subdirectory(${SPIRV_TOOLS_DIR} EXCLUDE_FROM_ALL)
+set(SPIRV-Headers_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/SPIRV-Headers")
+set(SPIRV_TOOLS_DIR "${PROJECT_SOURCE_DIR}/external/SPIRV-Tools")
+set(SPIRV_TOOLS_BINARY_DIR "${CMAKE_BINARY_DIR}/external/SPIRV-Tools")
+add_subdirectory("${SPIRV_TOOLS_DIR}" EXCLUDE_FROM_ALL)
 
-set(OPENCL_HEADERS_DIR ${PROJECT_SOURCE_DIR}/external/OpenCL-Headers)
+set(OPENCL_HEADERS_DIR "${PROJECT_SOURCE_DIR}/external/OpenCL-Headers")
+set(OPENCL_ICD_LOADER_DIR "${PROJECT_SOURCE_DIR}/external/OpenCL-ICD-Loader")
+set(OPENCL_ICD_LOADER_HEADERS_DIR "${OPENCL_HEADERS_DIR}" CACHE PATH "Path to OpenCL headers include dir")
+add_subdirectory(${OPENCL_ICD_LOADER_DIR})
 
 add_subdirectory(lib)
 add_subdirectory(tools)
