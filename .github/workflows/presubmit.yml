@@ -35,7 +35,7 @@ jobs:
           variant: sccache
           key: ${{ matrix.os }}-${{ matrix.config }}
       - name: Configure (Linux & MacOS)
-        if: ${{ ! contains(matrix.os, windows) }}
+        if: ${{ ! contains(matrix.os, 'windows') }}
         shell: bash
         run: |
             cmake \
@@ -49,7 +49,7 @@ jobs:
               -S . \
               -B ./build
       - name: Configure (Windows)
-        if: ${{ contains(matrix.os, windows) }}
+        if: ${{ contains(matrix.os, 'windows') }}
         shell: pwsh
         run: |
             cmake `
