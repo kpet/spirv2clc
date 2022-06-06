@@ -43,11 +43,15 @@ jobs:
             mkdir install
             cmake .. -G Ninja \
               -DSPIRV_WERROR=OFF \
+              -DSPIRV_SKIP_EXECUTABLES=ON \
+              -DSPIRV_SKIP_TESTS=ON \
               -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
               -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install'
       - name: Build
         run: cmake --build ./build --config ${{ matrix.config }} -j3
+      - name: Test
+        run: ctest --test-dir ./build --config ${{ matrix.config }} -j3
       - name: Install
         run: cmake --install ./build
       - uses: actions/upload-artifact@v3
