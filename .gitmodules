@@ -9,4 +9,5 @@
 	url = https://github.com/KhronosGroup/SPIRV-Tools.git
 [submodule "opencl-icd-loader"]
 	path = external/OpenCL-ICD-Loader
-	url = https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+	url = https://github.com/Kerilk/OpenCL-ICD-Loader.git
+	branch = system-layers
