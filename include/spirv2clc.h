@@ -74,7 +74,7 @@ private:
     } else if (m_imports.count(id)) {
       return m_imports.at(id);
     } else if (m_names.count(id)) {
-      return m_names.at(id);
+      return std::string{m_names.at(id)} + "_f";
     } else if (m_builtin_values.count(id)) {
       switch (m_builtin_values.at(id)) {
       case SpvBuiltInWorkDim:
@@ -230,12 +230,14 @@ private:
            ", " + var_for(op4) + ", " + var_for(op5) + ")";
   }
 
-  std::string src_pointer_type(uint32_t storage, uint32_t tyid, bool signedty) const;
+  std::string src_pointer_type(uint32_t storage, uint32_t tyid,
+                               bool signedty) const;
 
-  std::string builtin_vector_extract(uint32_t id, uint32_t idx, bool constant) const;
+  std::string builtin_vector_extract(uint32_t id, uint32_t idx,
+                                     bool constant) const;
 
-  bool is_valid_identifier(const std::string& name) const;
-  std::string make_valid_identifier(const std::string& name) const;
+  bool is_valid_identifier(const std::string &name) const;
+  std::string make_valid_identifier(const std::string &name) const;
 
   bool get_null_constant(uint32_t tyid, std::string &src) const;
   std::string

@@ -29,13 +29,37 @@ target_include_directories(libspirv2clc
 set_target_properties(libspirv2clc PROPERTIES
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON
+    POSITION_INDEPENDENT_CODE ON
 )
 
 target_link_libraries(libspirv2clc SPIRV-Tools-opt)
 
 generate_export_header(libspirv2clc)
 
-install(TARGETS libspirv2clc
+add_library(SPIRV2CLC-Layer SHARED
+  layer.cpp
+  layer_surface.cpp
+  $<$<AND:$<PLATFORM_ID:Windows>,$<CXX_COMPILER_ID:MSVC,Clang>>:layer.def>
+  $<$<CXX_COMPILER_ID:GNU>:layer.map>
+)
+
+target_include_directories(SPIRV2CLC-Layer
+  PRIVATE
+    ${OPENCL_HEADERS_DIR})
+
+target_compile_features(SPIRV2CLC-Layer PUBLIC cxx_std_17)
+
+target_compile_definitions(SPIRV2CLC-Layer
+  PUBLIC
+    CL_TARGET_OPENCL_VERSION=300)
+
+set_target_properties(libspirv2clc PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+)
+
+target_link_libraries(SPIRV2CLC-Layer PUBLIC libspirv2clc)
+
+install(TARGETS libspirv2clc SPIRV2CLC-Layer
     RUNTIME DESTINATION lib COMPONENT libraries
     LIBRARY DESTINATION lib COMPONENT libraries
     ARCHIVE DESTINATION lib COMPONENT libraries

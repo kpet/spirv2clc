@@ -18,8 +18,11 @@ project(spirv2clc)
 
 cmake_policy(SET CMP0063 NEW)
 
+option(SPIRV2CLC_BUILD_TESTING "Enable support for SPIRV2CLC testing." OFF)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include(GenerateExportHeader)
 
@@ -39,20 +42,28 @@ endif()
 
 # Enable compiler warnings
 if (MSVC)
-    add_compile_options(/W4 /WX)
+    add_compile_options(/W4)
 else()
     add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
 # Add SPIRV-Tools
-set(SPIRV-Headers_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Headers)
-set(SPIRV_TOOLS_DIR ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools)
-set(SPIRV_TOOLS_BINARY_DIR ${CMAKE_BINARY_DIR}/external/SPIRV-Tools)
-add_subdirectory(${SPIRV_TOOLS_DIR} EXCLUDE_FROM_ALL)
+set(SPIRV-Headers_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/SPIRV-Headers")
+set(SPIRV_TOOLS_DIR "${PROJECT_SOURCE_DIR}/external/SPIRV-Tools")
+set(SPIRV_TOOLS_BINARY_DIR "${CMAKE_BINARY_DIR}/external/SPIRV-Tools")
+add_subdirectory("${SPIRV_TOOLS_DIR}" EXCLUDE_FROM_ALL)
 
-set(OPENCL_HEADERS_DIR ${PROJECT_SOURCE_DIR}/external/OpenCL-Headers)
+set(OPENCL_HEADERS_DIR "${PROJECT_SOURCE_DIR}/external/OpenCL-Headers")
+set(OPENCL_ICD_LOADER_DIR "${PROJECT_SOURCE_DIR}/external/OpenCL-ICD-Loader")
+set(OPENCL_ICD_LOADER_HEADERS_DIR "${OPENCL_HEADERS_DIR}" CACHE PATH "Path to OpenCL headers include dir")
+add_subdirectory(${OPENCL_ICD_LOADER_DIR})
 
 add_subdirectory(lib)
 add_subdirectory(tools)
 
-add_subdirectory(tests)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR SPIRV2CLC_BUILD_TESTING)
+  include(CTest)
+endif()
+if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR SPIRV2CLC_BUILD_TESTING) AND BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

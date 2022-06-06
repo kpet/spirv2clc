@@ -34,22 +34,47 @@ jobs:
         with:
           variant: sccache
           key: ${{ matrix.os }}-${{ matrix.config }}
-      - name: Configure
+      - name: Configure (Linux & MacOS)
+        if: ${{ ! contains(matrix.os, 'windows') }}
         shell: bash
         run: |
-            set -ex
-            mkdir build
-            cd build
-            mkdir install
-            cmake .. -G Ninja \
-              -DSPIRV_WERROR=OFF \
-              -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install'
+          cmake \
+            -G Ninja \
+            -D SPIRV_WERROR=OFF \
+            -D SPIRV_SKIP_EXECUTABLES=ON \
+            -D SPIRV_SKIP_TESTS=ON \
+            -D CMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -D CMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            -D CMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install' \
+            -S . \
+            -B ./build
+      - name: Configure (Windows)
+        if: ${{ contains(matrix.os, 'windows') }}
+        shell: pwsh
+        run: |
+          $ICD_REG_PATH = 'HKLM:\SOFTWARE\Khronos\OpenCL\Vendors'
+          $LAYER_REG_PATH = 'HKLM:\SOFTWARE\Khronos\OpenCL\Layers'
+          New-Item -Type Directory ${ICD_REG_PATH}   -Force | Out-Null
+          New-Item -Type Directory ${LAYER_REG_PATH} -Force | Out-Null
+          Set-ItemProperty -Path ${ICD_REG_PATH}   -Type DWord -Value 0 -Name "${env:GITHUB_WORKSPACE}\build\bin\${{ matrix.config }}\layerloadicd.dll"
+          Set-ItemProperty -Path ${LAYER_REG_PATH} -Type DWord -Value 0 -Name "${env:GITHUB_WORKSPACE}\build\bin\${{ matrix.config }}\SPIRV2CLC-Layer.dll"
+          cmake `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
+            -T v143 `
+            -D SPIRV_WERROR=OFF `
+            -D SPIRV_SKIP_EXECUTABLES=ON `
+            -D SPIRV_SKIP_TESTS=ON `
+            -D CMAKE_BUILD_TYPE=${{ matrix.config }} `
+            -D CMAKE_INSTALL_PREFIX='${{ github.workspace }}/build/install' `
+            -S . `
+            -B ./build
       - name: Build
         run: cmake --build ./build --config ${{ matrix.config }} -j3
+      - name: Test
+        run: ctest --test-dir ./build --build-config ${{ matrix.config }} --output-on-failure -j3
       - name: Install
-        run: cmake --install ./build
+        run: cmake --install ./build --config ${{ matrix.config }}
       - uses: actions/upload-artifact@v3
         with:
           name: spirv2clc-${{ matrix.os }}-${{ matrix.config }}
