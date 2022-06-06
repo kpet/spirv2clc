@@ -56,8 +56,8 @@ jobs:
           $LAYER_REG_PATH = 'HKLM:\SOFTWARE\Khronos\OpenCL\Layers'
           New-Item -Type Directory ${ICD_REG_PATH}   -Force | Out-Null
           New-Item -Type Directory ${LAYER_REG_PATH} -Force | Out-Null
-          Set-ItemProperty -Path ${ICD_REG_PATH}   -Type DWord -Value 0 -Name "${env:GITHUB_WORKSPACE}\build\bin\${Config}\layerloadicd.dll"
-          Set-ItemProperty -Path ${LAYER_REG_PATH} -Type DWord -Value 0 -Name "${env:GITHUB_WORKSPACE}\build\bin\${Config}\SPIRV2CLC-Layer.dll"
+          Set-ItemProperty -Path ${ICD_REG_PATH}   -Type DWord -Value 0 -Name "${env:GITHUB_WORKSPACE}\build\bin\${{ matrix.config }}\layerloadicd.dll"
+          Set-ItemProperty -Path ${LAYER_REG_PATH} -Type DWord -Value 0 -Name "${env:GITHUB_WORKSPACE}\build\bin\${{ matrix.config }}\SPIRV2CLC-Layer.dll"
           cmake `
             -G "Visual Studio 17 2022" `
             -A x64 `
