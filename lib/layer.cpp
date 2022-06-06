@@ -315,51 +315,6 @@ cl_int layer::clGetDeviceInfo_CL_DEVICE_EXTENSIONS(
   }
 
   return CL_SUCCESS;
-  /*
-  cl_int err_;
-  bool layer_has_nothing_to_do =
-      device_supports_spirv_out_of_the_box(device, &err_);
-  if (layer_has_nothing_to_do || err_ != CL_SUCCESS)
-    return tdispatch->clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS,
-                                      param_value_size, param_value,
-                                      param_value_size_ret);
-
-  bool layer_has_work_but_need_not_alter_extension_string =
-      spirv_queries_are_core_for_device(device, &err_);
-  if (!layer_has_work_but_need_not_alter_extension_string || err_ != CL_SUCCESS)
-    return tdispatch->clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS,
-                                      param_value_size, param_value,
-                                      param_value_size_ret);
-
-  size_t dispatch_param_value_size_ret = 0;
-  err_ = tdispatch->clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, 0, nullptr,
-                                    &dispatch_param_value_size_ret);
-  if (err_ != CL_SUCCESS) return err_;
-
-  std::string dispatch_extensions(dispatch_param_value_size_ret, '\0');
-  err_ = tdispatch->clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS,
-                                    dispatch_extensions.size(),
-                                    dispatch_extensions.data(), nullptr);
-  if (err_ != CL_SUCCESS) return err_;
-  dispatch_extensions.pop_back(); // pop null-terminator
-  dispatch_extensions.append(" cl_khr_il_program");
-  dispatch_extensions.push_back('\0');
-
-  if (param_value_size_ret != nullptr)
-    *param_value_size_ret = dispatch_extensions.length() * sizeof(char);
-
-  if (param_value_size >= dispatch_extensions.length() * sizeof(char)) {
-    if (param_value != nullptr) {
-      std::copy(dispatch_extensions.begin(), dispatch_extensions.end(),
-                static_cast<char *>(param_value));
-      return CL_SUCCESS;
-    } else
-      return CL_INVALID_VALUE;
-  } else if (param_value == nullptr)
-    return CL_SUCCESS;
-  else
-    return CL_INVALID_VALUE;
-  */
 }
 
 cl_int layer::clGetDeviceInfo_CL_DEVICE_IL_VERSION(
