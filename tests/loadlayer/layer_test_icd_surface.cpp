@@ -1,6 +1,8 @@
 #include "layer_test_icd_surface.hpp"
 #include "layer_test_icd.hpp"
 
+#include <algorithm>   // std::find_if
+#include <memory>      // std::shared_ptr
 #include <type_traits> // std::remove_pointer_t
 
 template <typename T, typename F> cl_int invoke_if_valid(T cl_object, F &&f) {
