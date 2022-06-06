@@ -4,6 +4,7 @@
 #include "spirv2clc.h"
 
 #include <algorithm>
+#include <cstring>
 #include <optional>
 #include <sstream>
 #include <string_view>
