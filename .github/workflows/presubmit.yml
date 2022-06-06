@@ -72,7 +72,7 @@ jobs:
       - name: Build
         run: cmake --build ./build --config ${{ matrix.config }} -j3
       - name: Test
-        run: ctest --test-dir ./build --build-config ${{ matrix.config }} -j3
+        run: ctest --test-dir ./build --build-config ${{ matrix.config }} --output-on-failure -j3
       - name: Install
         run: cmake --install ./build
       - uses: actions/upload-artifact@v3
