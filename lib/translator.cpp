@@ -27,6 +27,11 @@ using spvtools::opt::analysis::Type;
 
 namespace {
 
+std::ostream &operator<<(std::ostream &os, const spv::Op &op) {
+  os << static_cast<int>(op);
+  return os;
+}
+
 std::string rounding_mode(SpvFPRoundingMode mode) {
   switch (mode) {
   case SpvFPRoundingModeRTE:
@@ -608,44 +613,44 @@ bool translator::get_null_constant(uint32_t tyid, std::string &src) const {
 }
 
 std::string translator::translate_binop(const Instruction &inst) const {
-  static std::unordered_map<SpvOp, const std::string> binops = {
-      {SpvOpFMul, "*"},
-      {SpvOpFDiv, "/"},
-      {SpvOpFAdd, "+"},
-      {SpvOpFSub, "-"},
-      {SpvOpISub, "-"},
-      {SpvOpIAdd, "+"},
-      {SpvOpIMul, "*"},
-      {SpvOpUDiv, "/"},
-      {SpvOpUMod, "%"},
-      {SpvOpULessThan, "<"},
-      {SpvOpULessThanEqual, "<="},
-      {SpvOpUGreaterThan, ">"},
-      {SpvOpUGreaterThanEqual, ">="},
-      {SpvOpLogicalEqual, "=="},
-      {SpvOpLogicalNotEqual, "!="},
-      {SpvOpIEqual, "=="},
-      {SpvOpINotEqual, "!="},
-      {SpvOpBitwiseOr, "|"},
-      {SpvOpBitwiseXor, "^"},
-      {SpvOpBitwiseAnd, "&"},
-      {SpvOpLogicalOr, "||"},
-      {SpvOpLogicalAnd, "&&"},
-      {SpvOpVectorTimesScalar, "*"},
-      {SpvOpShiftLeftLogical, "<<"},
-      {SpvOpShiftRightLogical, ">>"},
-      {SpvOpFOrdEqual, "=="},
-      {SpvOpFUnordEqual, "=="},
-      {SpvOpFOrdNotEqual, "!="},
-      {SpvOpFUnordNotEqual, "!="},
-      {SpvOpFOrdLessThan, "<"},
-      {SpvOpFUnordLessThan, "<"},
-      {SpvOpFOrdGreaterThan, ">"},
-      {SpvOpFUnordGreaterThan, ">"},
-      {SpvOpFOrdLessThanEqual, "<="},
-      {SpvOpFUnordLessThanEqual, "<="},
-      {SpvOpFOrdGreaterThanEqual, ">="},
-      {SpvOpFUnordGreaterThanEqual, ">="},
+  static std::unordered_map<spv::Op, const std::string> binops = {
+      {spv::Op::OpFMul, "*"},
+      {spv::Op::OpFDiv, "/"},
+      {spv::Op::OpFAdd, "+"},
+      {spv::Op::OpFSub, "-"},
+      {spv::Op::OpISub, "-"},
+      {spv::Op::OpIAdd, "+"},
+      {spv::Op::OpIMul, "*"},
+      {spv::Op::OpUDiv, "/"},
+      {spv::Op::OpUMod, "%"},
+      {spv::Op::OpULessThan, "<"},
+      {spv::Op::OpULessThanEqual, "<="},
+      {spv::Op::OpUGreaterThan, ">"},
+      {spv::Op::OpUGreaterThanEqual, ">="},
+      {spv::Op::OpLogicalEqual, "=="},
+      {spv::Op::OpLogicalNotEqual, "!="},
+      {spv::Op::OpIEqual, "=="},
+      {spv::Op::OpINotEqual, "!="},
+      {spv::Op::OpBitwiseOr, "|"},
+      {spv::Op::OpBitwiseXor, "^"},
+      {spv::Op::OpBitwiseAnd, "&"},
+      {spv::Op::OpLogicalOr, "||"},
+      {spv::Op::OpLogicalAnd, "&&"},
+      {spv::Op::OpVectorTimesScalar, "*"},
+      {spv::Op::OpShiftLeftLogical, "<<"},
+      {spv::Op::OpShiftRightLogical, ">>"},
+      {spv::Op::OpFOrdEqual, "=="},
+      {spv::Op::OpFUnordEqual, "=="},
+      {spv::Op::OpFOrdNotEqual, "!="},
+      {spv::Op::OpFUnordNotEqual, "!="},
+      {spv::Op::OpFOrdLessThan, "<"},
+      {spv::Op::OpFUnordLessThan, "<"},
+      {spv::Op::OpFOrdGreaterThan, ">"},
+      {spv::Op::OpFUnordGreaterThan, ">"},
+      {spv::Op::OpFOrdLessThanEqual, "<="},
+      {spv::Op::OpFUnordLessThanEqual, "<="},
+      {spv::Op::OpFOrdGreaterThanEqual, ">="},
+      {spv::Op::OpFUnordGreaterThanEqual, ">="},
   };
 
   auto v1 = inst.GetSingleWordOperand(2);
@@ -657,14 +662,14 @@ std::string translator::translate_binop(const Instruction &inst) const {
 }
 
 std::string translator::translate_binop_signed(const Instruction &inst) const {
-  static std::unordered_map<SpvOp, const std::string> binops = {
-      {SpvOpSDiv, "/"},
-      {SpvOpSRem, "%"},
-      {SpvOpShiftRightArithmetic, ">>"},
-      {SpvOpSLessThan, "<"},
-      {SpvOpSLessThanEqual, "<="},
-      {SpvOpSGreaterThan, ">"},
-      {SpvOpSGreaterThanEqual, ">="},
+  static std::unordered_map<spv::Op, const std::string> binops = {
+      {spv::Op::OpSDiv, "/"},
+      {spv::Op::OpSRem, "%"},
+      {spv::Op::OpShiftRightArithmetic, ">>"},
+      {spv::Op::OpSLessThan, "<"},
+      {spv::Op::OpSLessThanEqual, "<="},
+      {spv::Op::OpSGreaterThan, ">"},
+      {spv::Op::OpSGreaterThanEqual, ">="},
   };
 
   auto v1 = inst.GetSingleWordOperand(2);
@@ -716,23 +721,23 @@ bool translator::translate_instruction(const Instruction &inst,
   std::string boolean_result_src_type;
 
   switch (opcode) {
-  case SpvOpUndef: {
+  case spv::Op::OpUndef: {
     if (!get_null_constant(rtype, sval)) {
       return false;
     }
     break;
   }
-  case SpvOpUnreachable: // TODO trigger crash? end invocation?
+  case spv::Op::OpUnreachable: // TODO trigger crash? end invocation?
     break;
-  case SpvOpReturn:
+  case spv::Op::OpReturn:
     src = "return";
     break;
-  case SpvOpReturnValue: {
+  case spv::Op::OpReturnValue: {
     auto val = inst.GetSingleWordOperand(0);
     src = "return " + var_for(val);
     break;
   }
-  case SpvOpFunctionCall: {
+  case spv::Op::OpFunctionCall: {
     auto func = inst.GetSingleWordOperand(2);
     sval = var_for(func) + "(";
     const char *sep = "";
@@ -749,15 +754,15 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpCopyObject: {
+  case spv::Op::OpCopyObject: {
     auto obj = inst.GetSingleWordOperand(2);
     sval = var_for(obj);
     break;
   }
-  case SpvOpLifetimeStart:
-  case SpvOpLifetimeStop:
+  case spv::Op::OpLifetimeStart:
+  case spv::Op::OpLifetimeStop:
     break;
-  case SpvOpVariable: {
+  case spv::Op::OpVariable: {
     // auto storage = inst.GetSingleWordOperand(2); TODO make storage explicit?
     assign_result = false;
     auto varty = type_for(rtype)->AsPointer()->pointee_type();
@@ -776,7 +781,7 @@ bool translator::translate_instruction(const Instruction &inst,
     src += src_type(rtype) + " " + var_for(result) + " = &" + storagename;
     break;
   }
-  case SpvOpLoad: {
+  case spv::Op::OpLoad: {
     auto ptr = inst.GetSingleWordOperand(2);
     if (m_builtin_variables.count(ptr)) {
       m_builtin_values[result] = m_builtin_variables.at(ptr);
@@ -786,19 +791,19 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpStore: {
+  case spv::Op::OpStore: {
     auto ptr = inst.GetSingleWordOperand(0);
     auto val = inst.GetSingleWordOperand(1);
     src = "*" + var_for(ptr) + " = " + var_for(val);
     break;
   }
-  case SpvOpConvertPtrToU:
-  case SpvOpConvertUToPtr: {
+  case spv::Op::OpConvertPtrToU:
+  case spv::Op::OpConvertUToPtr: {
     auto src = inst.GetSingleWordOperand(2);
     sval = src_cast(rtype, src);
     break;
   }
-  case SpvOpInBoundsPtrAccessChain: {
+  case spv::Op::OpInBoundsPtrAccessChain: {
     auto base = inst.GetSingleWordOperand(2);
     auto elem = inst.GetSingleWordOperand(3);
     sval = "&" + var_for(base) + "[" + var_for(elem) + "]";
@@ -821,14 +826,14 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpSampledImage: {
+  case spv::Op::OpSampledImage: {
     auto image = inst.GetSingleWordOperand(2);
     auto sampler = inst.GetSingleWordOperand(3);
     m_sampled_images[result] = std::make_pair(image, sampler);
     assign_result = false;
     break;
   }
-  case SpvOpImageSampleExplicitLod: {
+  case spv::Op::OpImageSampleExplicitLod: {
     auto sampledimage = inst.GetSingleWordOperand(2);
     auto coord = inst.GetSingleWordOperand(3);
     // auto operands = inst.GetSingleWordOperand(4); FIXME translate
@@ -868,7 +873,7 @@ bool translator::translate_instruction(const Instruction &inst,
     break;
   }
 #if 0
-    case SpvOpImageWrite: {
+    case spv::Op::OpImageWrite: {
         auto image = inst.GetSingleWordOperand(0);
         auto coord = inst.GetSingleWordOperand(1);
         auto texel = inst.GetSingleWordOperand(2);
@@ -898,55 +903,60 @@ bool translator::translate_instruction(const Instruction &inst,
         break;
     }
 #endif
-  case SpvOpImageQuerySizeLod: {
+  case spv::Op::OpImageQuerySizeLod: {
     auto image = inst.GetSingleWordOperand(2);
     // auto lod = inst.GetSingleWordOperand(3); // FIXME validate
     sval = "((" + src_type(rtype) + ")(";
     auto tyimg = type_for_val(image);
     sval += "get_image_width(" + var_for(image) + ")";
     auto dim = tyimg->AsImage()->dim();
-    if ((dim == SpvDim2D) || (dim == SpvDim3D)) {
+    if ((dim == spv::Dim::Dim2D) || (dim == spv::Dim::Dim3D)) {
       sval += ", get_image_height(" + var_for(image) + ")";
     }
-    if (dim == SpvDim3D) {
+    if (dim == spv::Dim::Dim3D) {
       sval += ", get_image_depth(" + var_for(image) + ")";
     }
     sval += "))";
     break;
   }
-  case SpvOpAtomicIIncrement: {
+  case spv::Op::OpAtomicIIncrement: {
     auto ptr = inst.GetSingleWordOperand(2);
     sval = src_function_call("atomic_inc", ptr); // FIXME exact semantics
     break;
   }
-  case SpvOpAtomicIDecrement: {
+  case spv::Op::OpAtomicIDecrement: {
     auto ptr = inst.GetSingleWordOperand(2);
     sval = src_function_call("atomic_dec", ptr); // FIXME exact semantics
     break;
   }
-  case SpvOpAtomicAnd:
-  case SpvOpAtomicExchange:
-  case SpvOpAtomicIAdd:
-  case SpvOpAtomicISub:
-  case SpvOpAtomicOr:
-  case SpvOpAtomicSMax:
-  case SpvOpAtomicSMin:
-  case SpvOpAtomicUMax:
-  case SpvOpAtomicUMin:
-  case SpvOpAtomicXor: {
-    static std::unordered_map<SpvOp, const char *> fns{
-        {SpvOpAtomicAnd, "atomic_and"},  {SpvOpAtomicExchange, "atomic_xchg"},
-        {SpvOpAtomicIAdd, "atomic_add"}, {SpvOpAtomicISub, "atomic_sub"},
-        {SpvOpAtomicOr, "atomic_or"},    {SpvOpAtomicSMax, "atomic_max"},
-        {SpvOpAtomicSMin, "atomic_min"}, {SpvOpAtomicUMax, "atomic_max"},
-        {SpvOpAtomicUMin, "atomic_min"}, {SpvOpAtomicXor, "atomic_xor"},
+  case spv::Op::OpAtomicAnd:
+  case spv::Op::OpAtomicExchange:
+  case spv::Op::OpAtomicIAdd:
+  case spv::Op::OpAtomicISub:
+  case spv::Op::OpAtomicOr:
+  case spv::Op::OpAtomicSMax:
+  case spv::Op::OpAtomicSMin:
+  case spv::Op::OpAtomicUMax:
+  case spv::Op::OpAtomicUMin:
+  case spv::Op::OpAtomicXor: {
+    static std::unordered_map<spv::Op, const char *> fns{
+        {spv::Op::OpAtomicAnd, "atomic_and"},
+        {spv::Op::OpAtomicExchange, "atomic_xchg"},
+        {spv::Op::OpAtomicIAdd, "atomic_add"},
+        {spv::Op::OpAtomicISub, "atomic_sub"},
+        {spv::Op::OpAtomicOr, "atomic_or"},
+        {spv::Op::OpAtomicSMax, "atomic_max"},
+        {spv::Op::OpAtomicSMin, "atomic_min"},
+        {spv::Op::OpAtomicUMax, "atomic_max"},
+        {spv::Op::OpAtomicUMin, "atomic_min"},
+        {spv::Op::OpAtomicXor, "atomic_xor"},
     };
     auto ptr = inst.GetSingleWordOperand(2);
     auto val = inst.GetSingleWordOperand(5);
     sval = src_function_call(fns.at(opcode), ptr, val); // FIXME exact semantics
     break;
   }
-  case SpvOpAtomicCompareExchange: {
+  case spv::Op::OpAtomicCompareExchange: {
     auto ptr = inst.GetSingleWordOperand(2);
     auto val = inst.GetSingleWordOperand(6);
     auto cmp = inst.GetSingleWordOperand(7);
@@ -954,7 +964,7 @@ bool translator::translate_instruction(const Instruction &inst,
                              val); // FIXME exact semantics
     break;
   }
-  case SpvOpCompositeExtract: {
+  case spv::Op::OpCompositeExtract: {
     auto comp = inst.GetSingleWordOperand(2);
     auto idx = inst.GetSingleWordOperand(3); // FIXME support multiple indices
     if (m_builtin_values.count(comp)) {
@@ -974,7 +984,7 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpCompositeInsert: {
+  case spv::Op::OpCompositeInsert: {
     auto object = inst.GetSingleWordOperand(2);
     auto composite = inst.GetSingleWordOperand(3);
     auto index = inst.GetSingleWordOperand(4);
@@ -1000,7 +1010,7 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpCompositeConstruct: {
+  case spv::Op::OpCompositeConstruct: {
     sval = "{";
     const char *sep = "";
     for (unsigned i = 2; i < inst.NumOperands(); i++) {
@@ -1012,7 +1022,7 @@ bool translator::translate_instruction(const Instruction &inst,
     sval += "}";
     break;
   }
-  case SpvOpVectorExtractDynamic: {
+  case spv::Op::OpVectorExtractDynamic: {
     // ((elemtype)&vec)[elem]
     auto vec = inst.GetSingleWordOperand(2);
     auto idx = inst.GetSingleWordOperand(3);
@@ -1024,7 +1034,7 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpVectorInsertDynamic: {
+  case spv::Op::OpVectorInsertDynamic: {
     auto vec = inst.GetSingleWordOperand(2);
     auto comp = inst.GetSingleWordOperand(3);
     auto comp_type_id = type_id_for(comp);
@@ -1035,7 +1045,7 @@ bool translator::translate_instruction(const Instruction &inst,
             var_for(idx) + "] = " + var_for(comp);
     break;
   }
-  case SpvOpVectorShuffle: {
+  case spv::Op::OpVectorShuffle: {
     auto v1 = inst.GetSingleWordOperand(2);
     auto v2 = inst.GetSingleWordOperand(3);
     auto n1 = type_for_val(v1)->AsVector()->element_count();
@@ -1059,52 +1069,52 @@ bool translator::translate_instruction(const Instruction &inst,
     sval += "))";
     break;
   }
-  case SpvOpSDiv:
-  case SpvOpSRem:
-  case SpvOpShiftRightArithmetic:
+  case spv::Op::OpSDiv:
+  case spv::Op::OpSRem:
+  case spv::Op::OpShiftRightArithmetic:
     sval = src_as(rtype, translate_binop_signed(inst));
     break;
-  case SpvOpVectorTimesScalar:
-  case SpvOpShiftLeftLogical:
-  case SpvOpShiftRightLogical:
-  case SpvOpFAdd:
-  case SpvOpFSub:
-  case SpvOpFDiv:
-  case SpvOpFMul:
-  case SpvOpISub:
-  case SpvOpIAdd:
-  case SpvOpIMul:
-  case SpvOpUDiv:
-  case SpvOpUMod:
-  case SpvOpBitwiseOr:
-  case SpvOpBitwiseXor:
-  case SpvOpBitwiseAnd:
+  case spv::Op::OpVectorTimesScalar:
+  case spv::Op::OpShiftLeftLogical:
+  case spv::Op::OpShiftRightLogical:
+  case spv::Op::OpFAdd:
+  case spv::Op::OpFSub:
+  case spv::Op::OpFDiv:
+  case spv::Op::OpFMul:
+  case spv::Op::OpISub:
+  case spv::Op::OpIAdd:
+  case spv::Op::OpIMul:
+  case spv::Op::OpUDiv:
+  case spv::Op::OpUMod:
+  case spv::Op::OpBitwiseOr:
+  case spv::Op::OpBitwiseXor:
+  case spv::Op::OpBitwiseAnd:
     sval = translate_binop(inst);
     break;
-  case SpvOpFMod:
-  case SpvOpFRem: {
+  case spv::Op::OpFMod:
+  case spv::Op::OpFRem: {
     auto op1 = inst.GetSingleWordOperand(2);
     auto op2 = inst.GetSingleWordOperand(3);
     sval = src_function_call("fmod", op1, op2);
     break;
   }
-  case SpvOpSNegate:
-  case SpvOpFNegate: {
+  case spv::Op::OpSNegate:
+  case spv::Op::OpFNegate: {
     auto op = inst.GetSingleWordOperand(2);
     sval = "-" + var_for(op);
     break;
   }
-  case SpvOpLogicalNot: {
+  case spv::Op::OpLogicalNot: {
     auto op = inst.GetSingleWordOperand(2);
     sval = "!" + var_for(op);
     break;
   }
-  case SpvOpNot: {
+  case spv::Op::OpNot: {
     auto op = inst.GetSingleWordOperand(2);
     sval = "~" + var_for(op);
     break;
   }
-  case SpvOpLessOrGreater: {
+  case spv::Op::OpLessOrGreater: {
     auto op1 = inst.GetSingleWordOperand(2);
     auto op2 = inst.GetSingleWordOperand(3);
     boolean_result = true;
@@ -1112,102 +1122,102 @@ bool translator::translate_instruction(const Instruction &inst,
     sval = src_function_call("islessgreater", op1, op2);
     break;
   }
-  case SpvOpFOrdEqual:
-  case SpvOpFOrdNotEqual:
-  case SpvOpFOrdLessThan:
-  case SpvOpFOrdGreaterThan:
-  case SpvOpFOrdLessThanEqual:
-  case SpvOpFOrdGreaterThanEqual:
-  case SpvOpFUnordEqual:
-  case SpvOpFUnordNotEqual:
-  case SpvOpFUnordLessThan:
-  case SpvOpFUnordGreaterThan:
-  case SpvOpFUnordLessThanEqual:
-  case SpvOpFUnordGreaterThanEqual:
-  case SpvOpLogicalOr:
-  case SpvOpLogicalAnd:
-  case SpvOpULessThan:
-  case SpvOpULessThanEqual:
-  case SpvOpUGreaterThan:
-  case SpvOpUGreaterThanEqual:
-  case SpvOpLogicalEqual:
-  case SpvOpLogicalNotEqual:
-  case SpvOpIEqual:
-  case SpvOpINotEqual: {
+  case spv::Op::OpFOrdEqual:
+  case spv::Op::OpFOrdNotEqual:
+  case spv::Op::OpFOrdLessThan:
+  case spv::Op::OpFOrdGreaterThan:
+  case spv::Op::OpFOrdLessThanEqual:
+  case spv::Op::OpFOrdGreaterThanEqual:
+  case spv::Op::OpFUnordEqual:
+  case spv::Op::OpFUnordNotEqual:
+  case spv::Op::OpFUnordLessThan:
+  case spv::Op::OpFUnordGreaterThan:
+  case spv::Op::OpFUnordLessThanEqual:
+  case spv::Op::OpFUnordGreaterThanEqual:
+  case spv::Op::OpLogicalOr:
+  case spv::Op::OpLogicalAnd:
+  case spv::Op::OpULessThan:
+  case spv::Op::OpULessThanEqual:
+  case spv::Op::OpUGreaterThan:
+  case spv::Op::OpUGreaterThanEqual:
+  case spv::Op::OpLogicalEqual:
+  case spv::Op::OpLogicalNotEqual:
+  case spv::Op::OpIEqual:
+  case spv::Op::OpINotEqual: {
     auto op1 = inst.GetSingleWordOperand(2);
     boolean_result = true;
     boolean_result_src_type = src_type_boolean_for_val(op1);
     sval = translate_binop(inst);
     break;
   }
-  case SpvOpSLessThanEqual:
-  case SpvOpSGreaterThan:
-  case SpvOpSGreaterThanEqual:
-  case SpvOpSLessThan: {
+  case spv::Op::OpSLessThanEqual:
+  case spv::Op::OpSGreaterThan:
+  case spv::Op::OpSGreaterThanEqual:
+  case spv::Op::OpSLessThan: {
     auto op1 = inst.GetSingleWordOperand(2);
     boolean_result = true;
     boolean_result_src_type = src_type_boolean_for_val(op1);
     sval = translate_binop_signed(inst);
     break;
   }
-  case SpvOpAny: {
+  case spv::Op::OpAny: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("any", val);
     break;
   }
-  case SpvOpAll: {
+  case spv::Op::OpAll: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("all", val);
     break;
   }
-  case SpvOpIsNan: {
+  case spv::Op::OpIsNan: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("isnan", val);
     break;
   }
-  case SpvOpIsInf: {
+  case spv::Op::OpIsInf: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("isinf", val);
     break;
   }
-  case SpvOpIsFinite: {
+  case spv::Op::OpIsFinite: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("isfinite", val);
     break;
   }
-  case SpvOpIsNormal: {
+  case spv::Op::OpIsNormal: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("isnormal", val);
     break;
   }
-  case SpvOpSignBitSet: {
+  case spv::Op::OpSignBitSet: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("signbit", val);
     break;
   }
-  case SpvOpBitCount: {
+  case spv::Op::OpBitCount: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call("popcount", val);
     break;
   }
-  case SpvOpOrdered: {
+  case spv::Op::OpOrdered: {
     auto x = inst.GetSingleWordOperand(2);
     auto y = inst.GetSingleWordOperand(3);
     sval = src_function_call("isordered", x, y);
     break;
   }
-  case SpvOpUnordered: {
+  case spv::Op::OpUnordered: {
     auto x = inst.GetSingleWordOperand(2);
     auto y = inst.GetSingleWordOperand(3);
     sval = src_function_call("isunordered", x, y);
     break;
   }
-  case SpvOpConvertFToU:
-  case SpvOpConvertFToS: {
+  case spv::Op::OpConvertFToU:
+  case spv::Op::OpConvertFToS: {
     auto op = inst.GetSingleWordOperand(2);
     bool sat = m_saturated_conversions.count(result);
     sval = "convert_";
-    if (opcode == SpvOpConvertFToU) {
+    if (opcode == spv::Op::OpConvertFToU) {
       sval += src_type(rtype);
     } else {
       sval += src_type_signed(rtype);
@@ -1234,14 +1244,14 @@ bool translator::translate_instruction(const Instruction &inst,
 
     break;
   }
-  case SpvOpDot: {
+  case spv::Op::OpDot: {
     auto v1 = inst.GetSingleWordOperand(2);
     auto v2 = inst.GetSingleWordOperand(3);
     sval = src_function_call("dot", v1, v2);
     break;
   }
-  case SpvOpConvertUToF:
-  case SpvOpConvertSToF: {
+  case spv::Op::OpConvertUToF:
+  case spv::Op::OpConvertSToF: {
     auto op = inst.GetSingleWordOperand(2);
     bool sat = m_saturated_conversions.count(result);
     sval = "convert_";
@@ -1260,19 +1270,19 @@ bool translator::translate_instruction(const Instruction &inst,
 
     break;
   }
-  case SpvOpSatConvertSToU: {
+  case spv::Op::OpSatConvertSToU: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_as(
         rtype,
         src_function_call("convert_" + src_type_signed(rtype) + "_sat", val));
     break;
   }
-  case SpvOpSatConvertUToS: {
+  case spv::Op::OpSatConvertUToS: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_function_call_signed("convert_" + src_type(rtype) + "_sat", val);
     break;
   }
-  case SpvOpBitcast: {
+  case spv::Op::OpBitcast: {
     auto val = inst.GetSingleWordOperand(2);
     auto dstty = type_for(rtype);
     auto srcty = type_for_val(val);
@@ -1284,18 +1294,18 @@ bool translator::translate_instruction(const Instruction &inst,
     }
     break;
   }
-  case SpvOpSConvert: {
+  case spv::Op::OpSConvert: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_convert_signed(val, rtype);
     break;
   }
-  case SpvOpFConvert:
-  case SpvOpUConvert: {
+  case spv::Op::OpFConvert:
+  case spv::Op::OpUConvert: {
     auto val = inst.GetSingleWordOperand(2);
     sval = src_convert(val, rtype);
     break;
   }
-  case SpvOpSelect: {
+  case spv::Op::OpSelect: {
     auto cond = inst.GetSingleWordOperand(2);
     auto val_true = inst.GetSingleWordOperand(3);
     auto val_false = inst.GetSingleWordOperand(4);
@@ -1303,13 +1313,13 @@ bool translator::translate_instruction(const Instruction &inst,
         var_for(cond) + " ? " + var_for(val_true) + " : " + var_for(val_false);
     break;
   }
-  case SpvOpBranch: {
+  case spv::Op::OpBranch: {
     auto target = inst.GetSingleWordOperand(0);
     assign_result = false;
     src = "goto " + var_for(target);
     break;
   }
-  case SpvOpBranchConditional: {
+  case spv::Op::OpBranchConditional: {
     auto cond = inst.GetSingleWordOperand(0);
     auto label_true = inst.GetSingleWordOperand(1);
     auto label_false = inst.GetSingleWordOperand(2);
@@ -1318,13 +1328,14 @@ bool translator::translate_instruction(const Instruction &inst,
           ";} else { goto " + var_for(label_false) + ";}";
     break;
   }
-  case SpvOpLoopMerge:      // Nothing to do for now TODO loop controls
-  case SpvOpSelectionMerge: // TODO selection controls
+  case spv::Op::OpLoopMerge:      // Nothing to do for now TODO loop controls
+  case spv::Op::OpSelectionMerge: // TODO selection controls
     break;
-  case SpvOpPhi: // Nothing to do here, phi registers are assigned elsewhere
+  case spv::Op::OpPhi: // Nothing to do here, phi registers are assigned
+                       // elsewhere
     assign_result = false;
     break;
-  case SpvOpSwitch: {
+  case spv::Op::OpSwitch: {
     assign_result = false;
     auto select = inst.GetSingleWordOperand(0);
     auto def = inst.GetSingleWordOperand(1);
@@ -1339,7 +1350,7 @@ bool translator::translate_instruction(const Instruction &inst,
     src += "}";
     break;
   }
-  case SpvOpControlBarrier: {
+  case spv::Op::OpControlBarrier: {
     auto execution_scope = inst.GetSingleWordOperand(0);
     auto memory_scope = inst.GetSingleWordOperand(1);
     auto memory_semantics = inst.GetSingleWordOperand(2);
@@ -1404,7 +1415,7 @@ bool translator::translate_instruction(const Instruction &inst,
     src = src_function_call("barrier", flags);
     break;
   }
-  case SpvOpGroupAsyncCopy: {
+  case spv::Op::OpGroupAsyncCopy: {
     auto execution_scope = inst.GetSingleWordOperand(2);
     auto dst_ptr = inst.GetSingleWordOperand(3);
     auto src_ptr = inst.GetSingleWordOperand(4);
@@ -1441,7 +1452,7 @@ bool translator::translate_instruction(const Instruction &inst,
 
     break;
   }
-  case SpvOpGroupWaitEvents: {
+  case spv::Op::OpGroupWaitEvents: {
     auto execution_scope = inst.GetSingleWordOperand(0);
     auto num_events = inst.GetSingleWordOperand(1);
     auto event_list = inst.GetSingleWordOperand(2);
@@ -1467,7 +1478,7 @@ bool translator::translate_instruction(const Instruction &inst,
     assign_result = false;
     break;
   }
-  case SpvOpExtInst: {
+  case spv::Op::OpExtInst: {
     assign_result = false;
     if (!translate_extended_instruction(inst, src)) {
       return false;
@@ -1493,7 +1504,7 @@ bool translator::translate_instruction(const Instruction &inst,
 
 bool translator::translate_capabilities() {
   for (auto &inst : m_ir->capabilities()) {
-    assert(inst.opcode() == SpvOpCapability);
+    assert(inst.opcode() == spv::Op::OpCapability);
     auto cap = inst.GetSingleWordOperand(0);
     switch (cap) {
     case SpvCapabilityAddresses:
@@ -1523,7 +1534,7 @@ bool translator::translate_capabilities() {
 
 bool translator::translate_extensions() const {
   for (auto &inst : m_ir->module()->extensions()) {
-    assert(inst.opcode() == SpvOpExtension);
+    assert(inst.opcode() == spv::Op::OpExtension);
     auto &op_ext = inst.GetOperand(0);
     auto ext = op_ext.AsString();
     if (ext != "SPV_KHR_no_integer_wrap_decoration") {
@@ -1536,7 +1547,7 @@ bool translator::translate_extensions() const {
 
 bool translator::translate_extended_instructions_imports() const {
   for (auto &inst : m_ir->ext_inst_imports()) {
-    assert(inst.opcode() == SpvOpExtInstImport);
+    assert(inst.opcode() == spv::Op::OpExtInstImport);
     auto name = inst.GetOperand(1).AsString();
     if (name != "OpenCL.std") {
       std::cerr << "UNIMPLEMENTED extended instruction set.\n";
@@ -1796,8 +1807,8 @@ bool translator::translate_debug_instructions() {
   for (auto &inst : m_ir->module()->debugs1()) {
     auto opcode = inst.opcode();
     switch (opcode) {
-    case SpvOpSource:
-    case SpvOpString:
+    case spv::Op::OpSource:
+    case spv::Op::OpString:
       break;
     default:
       std::cerr << "UNIMPLEMENTED debug instructions in 7a " << opcode
@@ -1810,7 +1821,7 @@ bool translator::translate_debug_instructions() {
   for (auto &inst : m_ir->module()->debugs2()) {
     auto opcode = inst.opcode();
     switch (opcode) {
-    case SpvOpName: {
+    case spv::Op::OpName: {
       auto id = inst.GetSingleWordOperand(0);
       auto name = inst.GetOperand(1).AsString();
       std::replace(name.begin(), name.end(), '.', '_');
@@ -1847,7 +1858,7 @@ bool translator::translate_annotations() {
   for (auto &inst : m_ir->module()->annotations()) {
     auto opcode = inst.opcode();
     switch (opcode) {
-    case SpvOpDecorate: {
+    case spv::Op::OpDecorate: {
       auto target = inst.GetSingleWordOperand(0);
       auto decoration = inst.GetSingleWordOperand(1);
       switch (decoration) {
@@ -1941,9 +1952,9 @@ bool translator::translate_annotations() {
       }
       break;
     }
-    case SpvOpDecorationGroup:
+    case spv::Op::OpDecorationGroup:
       break;
-    case SpvOpGroupDecorate: {
+    case spv::Op::OpGroupDecorate: {
       auto group = inst.GetSingleWordOperand(0);
       bool restrict = m_restricts.count(group) != 0;
       bool hasvolatile = m_volatiles.count(group) != 0;
@@ -2038,7 +2049,7 @@ bool translator::translate_type(const Instruction &inst) {
   auto opcode = inst.opcode();
   auto result = inst.result_id();
   switch (opcode) {
-  case SpvOpTypePointer: {
+  case spv::Op::OpTypePointer: {
     auto storage = inst.GetSingleWordOperand(1);
     auto type = inst.GetSingleWordOperand(2);
     if (m_types_signed.count(type)) {
@@ -2047,7 +2058,7 @@ bool translator::translate_type(const Instruction &inst) {
     typestr = src_pointer_type(storage, type, false);
     break;
   }
-  case SpvOpTypeInt: {
+  case spv::Op::OpTypeInt: {
     auto width = inst.GetSingleWordOperand(1);
     switch (width) {
     case 8:
@@ -2072,7 +2083,7 @@ bool translator::translate_type(const Instruction &inst) {
     }
     break;
   }
-  case SpvOpTypeFloat: {
+  case spv::Op::OpTypeFloat: {
     auto width = inst.GetSingleWordOperand(1);
     switch (width) {
     case 16:
@@ -2090,14 +2101,14 @@ bool translator::translate_type(const Instruction &inst) {
     }
     break;
   }
-  case SpvOpTypeVector: {
+  case spv::Op::OpTypeVector: {
     auto ctype = inst.GetSingleWordOperand(1);
     auto cnum = inst.GetSingleWordOperand(2);
     typestr = src_type(ctype) + std::to_string(cnum);
     signedtypestr = src_type_signed(ctype) + std::to_string(cnum);
     break;
   }
-  case SpvOpTypeStruct: { // TODO support volatile members
+  case spv::Op::OpTypeStruct: { // TODO support volatile members
     // Declare the structure type
     m_src << "struct " + var_for(result) + " {" << std::endl;
     for (uint32_t opidx = 1; opidx < inst.NumOperands(); opidx++) {
@@ -2115,12 +2126,12 @@ bool translator::translate_type(const Instruction &inst) {
     typestr = "struct " + var_for(result);
     break;
   }
-  case SpvOpTypeArray: {
+  case spv::Op::OpTypeArray: {
     // Handled for pointers in OpTypePointer
     // Variable declarations are special-cased elsewhere
     break;
   }
-  case SpvOpTypeImage: {
+  case spv::Op::OpTypeImage: {
     // auto sampledty = inst.GetSingleWordOperand(1);
     auto dim = inst.GetSingleWordOperand(2);
     auto depth = inst.GetSingleWordOperand(3);
@@ -2171,26 +2182,26 @@ bool translator::translate_type(const Instruction &inst) {
 
     break;
   }
-  case SpvOpTypeSampledImage: // TODO anything?
+  case spv::Op::OpTypeSampledImage: // TODO anything?
     break;
-  case SpvOpTypeSampler:
+  case spv::Op::OpTypeSampler:
     typestr = "sampler_t";
     break;
-  case SpvOpTypeOpaque: {
+  case spv::Op::OpTypeOpaque: {
     auto name = inst.GetOperand(1).AsString();
     typestr = "struct " + name;
     m_src << typestr << ";" << std::endl;
     break;
   }
-  case SpvOpTypeBool:
+  case spv::Op::OpTypeBool:
     typestr = "bool";
     break;
-  case SpvOpTypeVoid:
+  case spv::Op::OpTypeVoid:
     typestr = "void";
     break;
-  case SpvOpTypeFunction: // FIXME
+  case spv::Op::OpTypeFunction: // FIXME
     break;
-  case SpvOpTypeEvent:
+  case spv::Op::OpTypeEvent:
     typestr = "event_t";
     break;
   default:
@@ -2213,26 +2224,26 @@ bool translator::translate_types_values() {
     auto result = inst.result_id();
 
     switch (opcode) {
-    case SpvOpTypeInt:
-    case SpvOpTypeVector:
-    case SpvOpTypePointer:
-    case SpvOpTypeVoid:
-    case SpvOpTypeBool:
-    case SpvOpTypeFunction:
-    case SpvOpTypeFloat:
-    case SpvOpTypeStruct:
-    case SpvOpTypeArray:
-    case SpvOpTypeOpaque:
-    case SpvOpTypeImage:
-    case SpvOpTypeSampler:
-    case SpvOpTypeSampledImage:
-    case SpvOpTypeEvent:
+    case spv::Op::OpTypeInt:
+    case spv::Op::OpTypeVector:
+    case spv::Op::OpTypePointer:
+    case spv::Op::OpTypeVoid:
+    case spv::Op::OpTypeBool:
+    case spv::Op::OpTypeFunction:
+    case spv::Op::OpTypeFloat:
+    case spv::Op::OpTypeStruct:
+    case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeOpaque:
+    case spv::Op::OpTypeImage:
+    case spv::Op::OpTypeSampler:
+    case spv::Op::OpTypeSampledImage:
+    case spv::Op::OpTypeEvent:
       if (!translate_type(inst)) {
         return false;
       }
       break;
 
-    case SpvOpConstant: {
+    case spv::Op::OpConstant: {
       auto &op_val = inst.GetOperand(2);
       auto type = type_for(rtype);
       switch (type->kind()) {
@@ -2307,8 +2318,8 @@ bool translator::translate_types_values() {
       }
       break;
     }
-    case SpvOpUndef:
-    case SpvOpConstantNull: {
+    case spv::Op::OpUndef:
+    case spv::Op::OpConstantNull: {
       std::string cst;
       if (!get_null_constant(rtype, cst)) {
         return false;
@@ -2316,15 +2327,15 @@ bool translator::translate_types_values() {
       m_literals[result] = cst;
       break;
     }
-    case SpvOpConstantTrue: {
+    case spv::Op::OpConstantTrue: {
       m_literals[result] = "true";
       break;
     }
-    case SpvOpConstantFalse: {
+    case spv::Op::OpConstantFalse: {
       m_literals[result] = "false";
       break;
     }
-    case SpvOpConstantSampler: {
+    case spv::Op::OpConstantSampler: {
       auto addressing_mode = inst.GetSingleWordOperand(2);
       auto normalised = inst.GetSingleWordOperand(3);
       auto filter_mode = inst.GetSingleWordOperand(4);
@@ -2370,7 +2381,7 @@ bool translator::translate_types_values() {
 
       break;
     }
-    case SpvOpConstantComposite: {
+    case spv::Op::OpConstantComposite: {
       auto type = type_for(rtype);
       std::string lit;
       switch (type->kind()) {
@@ -2430,7 +2441,7 @@ bool translator::translate_types_values() {
       }
       break;
     }
-    case SpvOpVariable: {
+    case spv::Op::OpVariable: {
       if (m_builtin_variables.count(result) != 0) {
         break;
       }
@@ -2549,7 +2560,7 @@ bool translator::translate_function(Function &func) {
               auto used_inst_id = op.AsId();
               auto defuse = m_ir->get_def_use_mgr();
               auto used_inst = defuse->GetDef(used_inst_id);
-              if (used_inst->opcode() == SpvOpVariable) {
+              if (used_inst->opcode() == spv::Op::OpVariable) {
                 if (used_inst->GetSingleWordOperand(2) == SpvStorageClassWorkgroup) {
                   used_globals_in_local_as.insert(used_inst_id);
                 }
@@ -2573,7 +2584,7 @@ bool translator::translate_function(Function &func) {
   for (auto &bb : func) {
     for (auto &inst : bb) {
       auto result = inst.result_id();
-      if (inst.opcode() != SpvOpPhi) {
+      if (inst.opcode() != spv::Op::OpPhi) {
         continue;
       }
       m_phi_vals[&func].push_back(result);
