@@ -50,7 +50,7 @@ jobs:
         run: cmake --build ./build --config ${{ matrix.config }} -j3
       - name: Install
         run: cmake --install ./build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: spirv2clc-${{ matrix.os }}-${{ matrix.config }}
           path: ${{ github.workspace }}/build/install
